@@ -12,11 +12,14 @@
   import FehlerAnzeige from './FehlerAnzeige.svelte';
   import DatenTabelle from './DatenTabelle.svelte';
   import NetzBild from './NetzBild.svelte';
+  import Draufsicht from './Draufsicht.svelte';
+  import Ansicht3D from './Ansicht3D.svelte';
   import type { ModellArt, TabellenInhalt } from './typen';
   import {
     falschEingeordnet,
     fehler,
     geradeEcht,
+    linearEcht,
     klassenbereiche,
     kosten,
     lesen,
@@ -63,7 +66,14 @@
   const zielText = (y: number) => (klasse ? klassen[y >= 0.5 ? 1 : 0] : `${zahl(y, i.ziel.stellen)} ${einheitWort}`);
   const frageWert = $derived(i.frage ? vorhersage(i, i.frage) : null);
   const frageJa = $derived(i.frage ? wahrscheinlichkeit(i, i.frage) : null);
-  const grenzen = $derived(klasse && art !== 'netz' ? klassenbereiche(i).grenzen : []);
+  // Zwei Merkmale (Torschuss): Draufsicht statt XY-Diagramm, ab Stufe 2 auch die 3D-Fläche (FR-21).
+  const zwei = $derived(i.merkmale.length === 2);
+  const ansicht3d = $derived(zwei && offenId === '3d');
+  let blick = $state<ReturnType<typeof Ansicht3D>>();
+  let neueKlasse = $state(1);
+  const grenzen = $derived(klasse && art !== 'netz' && !zwei ? klassenbereiche(i).grenzen : []);
+  const ebene = $derived(linearEcht(i));
+  const tief = ['₁', '₂', '₃'];
   // FR-17: Lernrate erst ab Stufe 2 einstellbar; auf Stufe 1 gilt die Standardrate, ohne die gespeicherte Wahl zu verlieren.
   const lernrate = $derived(stufe >= 2 ? i.lernrate : LERNRATE_STANDARD);
   let letzter = $state<Lernschritt | null>(null);
@@ -150,6 +160,28 @@
   const mitVorzeichen = (v: number, stellen = 3) => (v < 0 ? '− ' : '+ ') + zahl(Math.abs(v), stellen);
   const klammer = (v: number, stellen = 3) => (v < 0 ? `(−${zahl(-v, stellen)})` : zahl(v, stellen));
 
+  function verschieben2(id: number, x: number[], fertig: boolean) {
+    const z = i.zeilen.find((z) => z.id === id);
+    if (!z) return;
+    z.x = x;
+    auswahl = id;
+    if (fertig) onGeaendert();
+  }
+
+  function neuerPunkt2(x: number[]) {
+    const id = i.naechsteId++;
+    i.zeilen.push({ id, x, y: neueKlasse, test: false });
+    auswahl = id;
+    onGeaendert();
+  }
+
+  function klasseWechseln(id: number) {
+    const z = i.zeilen.find((z) => z.id === id);
+    if (!z) return;
+    z.y = z.y >= 0.5 ? 0 : 1;
+    onGeaendert();
+  }
+
   function verschieben(id: number, x: number, y: number, fertig: boolean) {
     const z = i.zeilen.find((z) => z.id === id);
     if (!z) return;
@@ -179,16 +211,19 @@
     onGeaendert();
   }
 
-  function frageSetzen(x: number) {
-    i.frage = [x];
+  function frageSetzen(x: number | number[]) {
+    i.frage = Array.isArray(x) ? x : [x];
     onGeaendert();
   }
 
-  function frageEingabe(text: string) {
+  /** Eingabe eines Merkmals der Frage; fehlende Merkmale starten in der Mitte ihres Bereichs. */
+  function frageEingabe(k: number, text: string) {
     const v = lesen(text);
     if (v === null) return;
-    const m = i.merkmale[0];
-    frageSetzen(Math.min(Math.max(v, m.min), m.max));
+    const neu = i.merkmale.map((m, n) => i.frage?.[n] ?? Math.round((m.min + m.max) / 2));
+    const m = i.merkmale[k];
+    neu[k] = Math.min(Math.max(v, m.min), m.max);
+    frageSetzen(neu);
   }
 
   onDestroy(() => {
@@ -200,24 +235,38 @@
 <section class="leinwand">
   <div class="diagramm karte">
     <div class="plot">
-      <Diagramm
-        {i}
-        modus={offenId === 'daten' ? 'daten' : offenId === 'vorhersage' ? 'vorhersage' : null}
-        {auswahl}
-        abstaende={offenId === 'training' || laeuft}
-        onAuswahl={(id) => (auswahl = id)}
-        onVerschieben={verschieben}
-        onNeu={neuerPunkt}
-        onFrage={frageSetzen}
-      />
+      {#if ansicht3d}
+        <Ansicht3D bind:this={blick} {i} />
+      {:else if zwei}
+        <Draufsicht
+          {i}
+          modus={offenId === 'daten' ? 'daten' : offenId === 'vorhersage' ? 'vorhersage' : null}
+          {auswahl}
+          onAuswahl={(id) => (auswahl = id)}
+          onVerschieben={verschieben2}
+          onNeu={neuerPunkt2}
+          onFrage={frageSetzen}
+        />
+      {:else}
+        <Diagramm
+          {i}
+          modus={offenId === 'daten' ? 'daten' : offenId === 'vorhersage' ? 'vorhersage' : null}
+          {auswahl}
+          abstaende={offenId === 'training' || laeuft}
+          onAuswahl={(id) => (auswahl = id)}
+          onVerschieben={verschieben}
+          onNeu={neuerPunkt}
+          onFrage={frageSetzen}
+        />
+      {/if}
     </div>
     <div class="legende klein">
       {#if klasse}
         <span><i class="kreis voll"></i>{klassen[1]}</span>
         <span><i class="kreis"></i>{klassen[0]}</span>
         <span><i class="quadrat"></i>Testdaten</span>
-        <span><i class="strich"></i>Modell</span>
-        <span><i class="schraffur"></i>Bereich „{klassen[1]}“</span>
+        {#if zwei}<span><i class="strich dunkel"></i>Grenze 50 %</span>{:else}<span><i class="strich"></i>Modell</span>{/if}
+        {#if ansicht3d}<span><i class="verlauf"></i>Fläche = Wahrscheinlichkeit</span>{:else}<span><i class="schraffur"></i>Bereich „{klassen[1]}“</span>{/if}
       {:else}
         <span><i class="kreis"></i>Trainingsdaten</span>
         <span><i class="quadrat"></i>Testdaten</span>
@@ -237,14 +286,26 @@
   {/if}
 
   {#if offen}
-    <div class="schublade">
+    <div class="schublade" class:rechts={ansicht3d}>
       <InfoKarte titel={offen.name} info={offen.info} frage={offen.id === 'vorhersage'} onSchliessen={() => (offenId = null)}>
         {#if offen.id === 'daten'}
-          <p class="klein leise">Tippt ins Diagramm, um einen Punkt zu setzen{klasse ? `: oben „${klassen[1]}“, unten „${klassen[0]}“` : ''}. Zieht einen Punkt, um ihn zu verschieben, oder tippt ihn an, um ihn auszuwählen.</p>
+          {#if zwei}
+            <div class="zeile">
+              <span class="klein">Neue Punkte:</span>
+              <div class="wahl klein-wahl" role="group" aria-label="Klasse neuer Punkte">
+                <button aria-pressed={neueKlasse === 1} onclick={() => (neueKlasse = 1)}>{klassen[1]}</button>
+                <button aria-pressed={neueKlasse === 0} onclick={() => (neueKlasse = 0)}>{klassen[0]}</button>
+              </div>
+            </div>
+            <p class="klein leise">Tippt in die Draufsicht, um einen Punkt der gewählten Klasse zu setzen. Zieht einen Punkt, um ihn zu verschieben, oder tippt ihn an, um ihn auszuwählen.</p>
+          {:else}
+            <p class="klein leise">Tippt ins Diagramm, um einen Punkt zu setzen{klasse ? `: oben „${klassen[1]}“, unten „${klassen[0]}“` : ''}. Zieht einen Punkt, um ihn zu verschieben, oder tippt ihn an, um ihn auszuwählen.</p>
+          {/if}
           {#if gewaehlt}
             <div class="zeile">
-              <span>Ausgewählt: <strong>{zahl(gewaehlt.x[0], i.merkmale[0].stellen)} {i.merkmale[0].einheit} · {zielText(gewaehlt.y)}</strong></span>
+              <span>Ausgewählt: <strong>{gewaehlt.x.map((v, k) => `${zahl(v, i.merkmale[k].stellen)} ${i.merkmale[k].einheit}`).join(', ')} · {zielText(gewaehlt.y)}</strong></span>
               <span class="raum"></span>
+              {#if zwei}<button onclick={() => klasseWechseln(gewaehlt.id)}>Klasse wechseln</button>{/if}
               <button onclick={() => testUmschalten(gewaehlt.id)}>{gewaehlt.test ? 'Zu Trainingsdaten' : 'Zu Testdaten'}</button>
               <button onclick={() => loeschen(gewaehlt.id)}>Löschen</button>
             </div>
@@ -255,6 +316,10 @@
         {:else if offen.id === 'modell'}
           {#if art === 'netz'}
             <p>Das <Begriff id="modell" /> ist ein kleines <Begriff id="netz" />. Seine <Begriff id="neuron" text="Neuronen" /> biegen die Linie, so kann es auch Kurven lernen.</p>
+          {:else if zwei && art === 'skurve'}
+            <p>Das <Begriff id="modell" /> ist eine <Begriff id="skurve" /> über beide Eingaben. Ab 50 % <Begriff id="wahrscheinlichkeit" /> sagt es „{klassen[1]}“; die dunkle Linie in der Draufsicht ist die <Begriff id="klassengrenze" text="Grenze" />.</p>
+          {:else if zwei}
+            <p>Das <Begriff id="modell" /> ist eine schräge Ebene über beiden Eingaben. Wo sie über 50 % liegt, sagt es „{klassen[1]}“.</p>
           {:else if art === 'skurve'}
             <p>Das <Begriff id="modell" /> ist eine <Begriff id="skurve" />. Sie zeigt für jeden Wert, wie <Begriff id="wahrscheinlichkeit" text="wahrscheinlich" /> „{klassen[1]}“ ist; ab 50 % sagt es „{klassen[1]}“.</p>
           {:else if klasse}
@@ -275,12 +340,20 @@
                 <input id="neuronen" type="range" min="1" max={NEURONEN_HOECHSTENS} step="1" value={netz.w2.length} oninput={(e) => neuesModell('netz', Number(e.currentTarget.value))} use:erklaert={'Mehr Neuronen machen das Netz biegsamer. Zu viele können sich auch an Zufälle in den Daten anpassen.'} />
                 <strong class="zahl">{netz.w2.length}</strong>
               </div>
-              <NetzBild {netz} eingabe={MERKMAL} ausgabe={ZIEL} />
+              <NetzBild {netz} eingaben={i.merkmale.map((m) => m.name)} ausgabe={ZIEL} />
             {/if}
             <p class="klein leise">Ein neu gewähltes Modell hat noch nichts gelernt. Trainiert es danach.</p>
           {/if}
           {#if stufe >= 3}
-            {#if art === 'gerade'}
+            {#if zwei && art !== 'netz'}
+              <p class="formel">
+                {art === 'skurve' ? 'z' : ZIEL} =
+                {#each ebene.steigungen as st, k}{k ? (st < 0 ? ' − ' : ' + ') : st < 0 ? '−' : ''}<span class="w">{zahl(Math.abs(st), 3)}</span> · {i.merkmale[k].name}{/each}
+                {mitVorzeichen(ebene.achsenabschnitt, 2)}
+              </p>
+              {#if art === 'skurve'}<p class="klein leise">p({klassen[1]}) = 1 / (1 + e<sup>−z</sup>). Bei z = 0 ist p = 50 %: Dort liegt die dunkle <Begriff id="klassengrenze" text="Grenze" />, eine gerade Linie in der Draufsicht.</p>
+              {:else}<p class="klein leise">Wo die Ebene den Wert 0,5 hat, liegt die <Begriff id="klassengrenze" text="Grenze" />, eine gerade Linie in der Draufsicht.</p>{/if}
+            {:else if art === 'gerade'}
               <p class="formel">{ZIEL} = <span class="w">{zahl(gerade.steigung, klasse ? 3 : 2)}</span> · {MERKMAL} {mitVorzeichen(gerade.achsenabschnitt, klasse ? 2 : 1)}</p>
               {#if klasse}
                 <p class="klein leise">Steigung {zahl(gerade.steigung, 3)}: Pro {i.merkmale[0].einheit} mehr steigt der Wert um {zahl(gerade.steigung * 100, 1)} Prozentpunkte. {#if grenzen.length}Bei 0,5 liegt die <Begriff id="klassengrenze" text="Grenze" />: {zahl(grenzen[0], 1)} {i.merkmale[0].einheit}.{/if}</p>
@@ -291,12 +364,12 @@
               <p class="formel">p({klassen[1]}) = <span class="bruch">1 / (1 + e<sup>−z</sup>)</span>, z = <span class="w">{zahl(gerade.steigung, 3)}</span> · {MERKMAL} {mitVorzeichen(gerade.achsenabschnitt, 2)}</p>
               <p class="klein leise">Bei z = 0 ist p = 50 %: Dort liegt die <Begriff id="klassengrenze" text="Grenze" />{#if grenzen.length}, bei {zahl(grenzen[0], 1)} {i.merkmale[0].einheit}{/if}. Je größer die Steigung, desto steiler die S-Kurve.</p>
             {:else if netz}
-              <p class="formel">h<sub>j</sub> = tanh(w<sub>j</sub> · x + b<sub>j</sub>), &nbsp;ŷ = {klasse ? 'σ(' : ''}Σ v<sub>j</sub> · h<sub>j</sub> + c{klasse ? ')' : ''}</p>
+              <p class="formel">h<sub>j</sub> = tanh({zwei ? 'w₁ⱼ · x₁ + w₂ⱼ · x₂' : 'wⱼ · x'} + b<sub>j</sub>), &nbsp;ŷ = {klasse ? 'σ(' : ''}Σ v<sub>j</sub> · h<sub>j</sub> + c{klasse ? ')' : ''}</p>
               <table class="gewichte">
-                <thead><tr><th>Neuron</th><th>w</th><th>b</th><th>v</th></tr></thead>
+                <thead><tr><th>Neuron</th>{#each i.merkmale as _, k}<th>w{zwei ? tief[k] : ''}</th>{/each}<th>b</th><th>v</th></tr></thead>
                 <tbody>
                   {#each netz.w1 as w, j}
-                    <tr><td>{j + 1}</td><td>{zahl(w[0], 2)}</td><td>{zahl(netz.b1[j], 2)}</td><td>{zahl(netz.w2[j], 2)}</td></tr>
+                    <tr><td>{j + 1}</td>{#each w as wk}<td>{zahl(wk, 2)}</td>{/each}<td>{zahl(netz.b1[j], 2)}</td><td>{zahl(netz.w2[j], 2)}</td></tr>
                   {/each}
                 </tbody>
               </table>
@@ -324,18 +397,20 @@
             <div class="rechenweg">
               <div class="label">Rechenweg, <Begriff id="normiert" /> gerechnet</div>
               <p>
-                {art === 'gerade' ? 'ŷ = w · x + b' : art === 'skurve' ? 'ŷ = σ(w · x + b)' : 'ŷ = Netz(x)'} &nbsp;·&nbsp; K =
+                {art === 'netz' ? 'ŷ = Netz(x)' : `ŷ = ${art === 'skurve' ? 'σ(' : ''}${zwei ? 'w₁ · x₁ + w₂ · x₂' : 'w · x'} + b${art === 'skurve' ? ')' : ''}`} &nbsp;·&nbsp; K =
                 {#if ce}−<span class="bruch">1/n</span> Σ [y · ln ŷ + (1 − y) · ln(1 − ŷ)]{:else}<span class="bruch">1/n</span> Σ (ŷ − y)²{/if}
                 = <strong>{zahl(kostenJetzt, 4)}</strong>
               </p>
               {#if letzter && letzter.grad.art !== 'netz' && letzter.vorher.art !== 'netz' && letzter.nachher.art !== 'netz'}
-                <p>w: {zahl(letzter.vorher.w[0], 3)} − {zahl(letzter.lernrate, 2)} · {klammer(letzter.grad.w[0])} = <strong>{zahl(letzter.nachher.w[0], 3)}</strong></p>
+                {#each letzter.vorher.w as wk, k}
+                  <p>w{zwei ? tief[k] : ''}: {zahl(wk, 3)} − {zahl(letzter.lernrate, 2)} · {klammer(letzter.grad.w[k])} = <strong>{zahl(letzter.nachher.w[k], 3)}</strong></p>
+                {/each}
                 <p>b: {zahl(letzter.vorher.b, 3)} − {zahl(letzter.lernrate, 2)} · {klammer(letzter.grad.b)} = <strong>{zahl(letzter.nachher.b, 3)}</strong></p>
                 <p class="klein leise">Neues Gewicht = altes Gewicht − Lernrate · Steigung der Kosten (Gradient). Die Kosten sanken von {zahl(letzter.kostenVorher, 4)} auf {zahl(letzter.kostenNachher, 4)}.</p>
               {:else if letzter && letzter.grad.art === 'netz' && letzter.vorher.art === 'netz' && letzter.nachher.art === 'netz'}
                 <p>v₁: {zahl(letzter.vorher.w2[0], 3)} − {zahl(letzter.lernrate, 3)} · {klammer(letzter.grad.w2[0])} = <strong>{zahl(letzter.nachher.w2[0], 3)}</strong></p>
                 <p>w₁: {zahl(letzter.vorher.w1[0][0], 3)} − {zahl(letzter.lernrate, 3)} · {klammer(letzter.grad.w1[0][0])} = <strong>{zahl(letzter.nachher.w1[0][0], 3)}</strong></p>
-                <p class="klein leise">So ändert die App alle {letzter.vorher.w2.length * 3 + 1} Gewichte. Die Steigungen rechnet sie von der Ausgabe rückwärts zu den Neuronen aus (Backpropagation). Beim Netz teilt sie die Lernrate: 2 · {zahl(lernrate, 2)} / ({letzter.vorher.w2.length} + 1) = {zahl(letzter.lernrate, 3)}. Die Kosten sanken von {zahl(letzter.kostenVorher, 4)} auf {zahl(letzter.kostenNachher, 4)}.</p>
+                <p class="klein leise">So ändert die App alle {letzter.vorher.w2.length * (i.merkmale.length + 2) + 1} Gewichte. Die Steigungen rechnet sie von der Ausgabe rückwärts zu den Neuronen aus (Backpropagation). Beim Netz teilt sie die Lernrate: 2 · {zahl(lernrate, 2)} / ({letzter.vorher.w2.length} + 1) = {zahl(letzter.lernrate, 3)}. Die Kosten sanken von {zahl(letzter.kostenVorher, 4)} auf {zahl(letzter.kostenNachher, 4)}.</p>
               {:else}
                 <p class="klein leise">Macht einen Lernschritt, dann steht hier, wie die Gewichte neu berechnet werden.</p>
               {/if}
@@ -343,9 +418,11 @@
           {/if}
         {:else if offen.id === 'vorhersage'}
           <div class="zeile frage">
-            <label for="frage">{i.merkmale[0].name}</label>
-            <input id="frage" inputmode="decimal" placeholder="z. B. {zahl((i.merkmale[0].min + i.merkmale[0].max) / 2 + 3, 0)}" value={i.frage ? zahl(i.frage[0], i.merkmale[0].stellen, false) : ''} onchange={(e) => frageEingabe(e.currentTarget.value)} />
-            <span class="leise">{i.merkmale[0].einheit} ›</span>
+            {#each i.merkmale as m, k}
+              <label for={k ? `frage${k + 1}` : 'frage'}>{m.name}</label>
+              <input id={k ? `frage${k + 1}` : 'frage'} inputmode="decimal" placeholder="z. B. {zahl((m.min + m.max) / 2 + 3, 0)}" value={i.frage?.[k] !== undefined ? zahl(i.frage[k], m.stellen, false) : ''} onchange={(e) => frageEingabe(k, e.currentTarget.value)} />
+              <span class="leise">{m.einheit}{k === i.merkmale.length - 1 ? ' ›' : ''}</span>
+            {/each}
             {#if klasse && frageJa !== null}
               {@const ja = frageJa >= 0.5}
               <strong class="antwort">{klassen[ja ? 1 : 0]}</strong>
@@ -364,7 +441,12 @@
             <p class="klein leise"><Begriff id="testdaten" text="Testdaten" /> zeigen, ob das Modell auch bei Fällen stimmt, die es nicht gelernt hat: Dort liegt es im Mittel {zahl(fehlerTest, 1)} {einheitWort} daneben.</p>
           {/if}
         {:else}
-          <p class="klein leise">Die 3D-Ansicht braucht zwei Eingaben. Sie kommt mit dem Beispiel Torschuss.</p>
+          {#if zwei}
+            <p class="klein leise">Die Fläche zeigt für jeden Schuss, wie <Begriff id="wahrscheinlichkeit" text="wahrscheinlich" /> „{klassen[1]}“ ist. Die dunkle Linie liegt bei 50 %: Es ist dieselbe Grenze wie in der Draufsicht. Dreht mit einem Finger, zoomt mit zwei.</p>
+            <div class="zeile"><button onclick={() => blick?.zuruecksetzen()}>Ansicht zurücksetzen</button></div>
+          {:else}
+            <p class="klein leise">Die 3D-Ansicht braucht zwei Eingaben, zum Beispiel beim Torschuss: Entfernung und Winkel.</p>
+          {/if}
         {/if}
       </InfoKarte>
     </div>
@@ -390,10 +472,15 @@
   .schraffur { width: 16px; height: 12px; border: 1px solid var(--modell); background: repeating-linear-gradient(45deg, var(--modell-hell) 0 3px, #b9cfee 3px 4.5px); }
   .quadrat { width: 11px; height: 11px; border: 2px solid var(--frage); }
   .strich { width: 16px; height: 3px; background: var(--modell); border-radius: 2px; }
+  .strich.dunkel { background: var(--grenze, #174a8c); }
+  .verlauf { width: 16px; height: 12px; background: linear-gradient(90deg, var(--modell-hell), var(--modell)); border: 1px solid var(--modell); }
+  .klein-wahl button { min-height: 36px; padding: 0 14px; }
   .raute { width: 9px; height: 9px; background: var(--frage); transform: rotate(45deg); }
   .seitentabelle { width: 320px; padding: 10px 12px; overflow: auto; }
   .schublade { position: absolute; left: 50%; bottom: 92px; transform: translateX(-50%); width: min(480px, 92vw); z-index: 10; }
   .schublade p { margin: 0; }
+  /* In der 3D-Ansicht rückt die Karte nach rechts unten, damit die Fläche frei bleibt. */
+  .schublade.rechts { left: auto; right: 28px; transform: none; width: min(340px, 40vw); }
   .zeile { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
   .raum { flex: 1; }
   .tabellenbox { max-height: 230px; overflow: auto; }

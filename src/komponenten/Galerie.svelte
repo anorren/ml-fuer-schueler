@@ -52,7 +52,7 @@
           {#if punkte}
             <svg viewBox="0 0 100 50">
               {#each punkte as p}
-                {#if p.test}<rect x={6 + p.x * 88 - 1.6} y={46 - p.y * 42 - 1.6} width="3.2" height="3.2" class="t" />{:else}<circle cx={6 + p.x * 88} cy={46 - p.y * 42} r="1.8" />{/if}
+                {#if p.test}<rect x={6 + p.x * 88 - 1.6} y={46 - p.y * 42 - 1.6} width="3.2" height="3.2" class="t" class:voll={p.voll} />{:else}<circle cx={6 + p.x * 88} cy={46 - p.y * 42} r="1.8" class:voll={p.voll} />{/if}
               {/each}
             </svg>
           {:else}<span class="folgt klein">folgt</span>{/if}
@@ -68,7 +68,7 @@
     </button>
   </div>
 
-  <p class="klein leise hinweis">Fertig sind Schulkiosk, Hitzefrei und Fahrrad-Bremsweg; Torschuss und Bias folgen. <button class="verweis" onclick={onMachbarkeit}>Machbarkeitstest öffnen</button></p>
+  <p class="klein leise hinweis">Fertig sind Schulkiosk, Hitzefrei, Fahrrad-Bremsweg und Torschuss; Bias folgt. <button class="verweis" onclick={onMachbarkeit}>Machbarkeitstest öffnen</button></p>
 </section>
 
 <style>
@@ -89,6 +89,8 @@
   .vorschau circle { fill: var(--flaeche); stroke: var(--schrift); stroke-width: 0.8; vector-effect: non-scaling-stroke; }
   .vorschau rect.t { fill: var(--flaeche); stroke: var(--frage); stroke-width: 1.2; vector-effect: non-scaling-stroke; }
   .folgt { color: var(--schrift3); }
+  .vorschau circle.voll { fill: var(--schrift); }
+  .vorschau rect.t.voll { fill: var(--frage); }
   .zeile { display: flex; justify-content: space-between; align-items: center; }
   .marke { font-size: 12px; padding: 2px 9px; border-radius: 20px; background: var(--modell-hell); }
   .leer { border-style: dashed; align-items: center; justify-content: center; }

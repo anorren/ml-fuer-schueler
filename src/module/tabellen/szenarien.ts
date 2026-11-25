@@ -6,6 +6,10 @@ function zeilen(train: [number, number][], test: [number, number][] = []): Zeile
   return [...train.map(([x, y]) => ({ x: [x], y, test: false })), ...test.map(([x, y]) => ({ x: [x], y, test: true }))].map((z, k) => ({ ...z, id: k + 1 }));
 }
 
+function zeilen2(train: [number, number, number][], test: [number, number, number][] = []): Zeile[] {
+  return [...train.map(([a, b, y]) => ({ x: [a, b], y, test: false })), ...test.map(([a, b, y]) => ({ x: [a, b], y, test: true }))].map((z, k) => ({ ...z, id: k + 1 }));
+}
+
 function grundinhalt(teil: Pick<TabellenInhalt, 'art' | 'merkmale' | 'ziel' | 'zeilen' | 'erfunden'>, modell: ModellArt = 'gerade'): TabellenInhalt {
   return { version: 1, ...teil, modell: modellNeu(modell, teil.merkmale.length), lernrate: LERNRATE, schritte: 0, verlauf: [], frage: null, naechsteId: teil.zeilen.length + 1 };
 }
@@ -35,6 +39,27 @@ const VORLAGEN: Record<string, () => TabellenInhalt> = {
         zeilen: zeilen(
           [[14, 0], [16, 0], [18, 0], [20, 0], [22, 0], [23, 0], [24, 0], [25, 0], [26, 0], [28, 0], [27, 1], [29, 1], [30, 1], [31, 1], [33, 1]],
           [[21, 0], [32, 1]]
+        )
+      },
+      'skurve'
+    ),
+  // Zwei Merkmale (FR-21): Draufsicht mit Bereich „Tor“ und 3D-Fläche der Wahrscheinlichkeit; Vorhersage mit Wahrscheinlichkeit (FR-19).
+  torschuss: () =>
+    grundinhalt(
+      {
+        art: 'klasse',
+        erfunden: true,
+        merkmale: [
+          { name: 'Entfernung', einheit: 'm', min: 0, max: 35, stellen: 0 },
+          { name: 'Winkel', einheit: '°', min: 0, max: 80, stellen: 0 }
+        ],
+        ziel: { name: 'Torschuss', einheit: 'Tor oder kein Tor', min: 0, max: 1, stellen: 0, klassen: ['kein Tor', 'Tor'] },
+        zeilen: zeilen2(
+          [
+            [5, 5, 1], [6, 30, 1], [8, 15, 1], [9, 45, 1], [11, 10, 1], [12, 30, 1], [14, 5, 1], [15, 20, 1], [17, 8, 1], [7, 55, 1], [20, 12, 1],
+            [8, 70, 0], [13, 55, 0], [16, 40, 0], [19, 30, 0], [22, 15, 0], [24, 5, 0], [26, 25, 0], [28, 45, 0], [30, 10, 0], [18, 60, 0], [32, 30, 0], [25, 55, 0], [14, 35, 0]
+          ],
+          [[9, 25, 1], [16, 10, 1], [27, 15, 0], [20, 45, 0]]
         )
       },
       'skurve'
@@ -104,9 +129,12 @@ export function inhaltHerstellen(roh: unknown, szenario: string | null): Record<
 }
 
 /** Kleine Vorschau für die Galerie: Punkte im Bereich 0 … 1. */
-export function vorschau(szenario: string): { x: number; y: number; test: boolean }[] | null {
+export function vorschau(szenario: string): { x: number; y: number; test: boolean; voll?: boolean }[] | null {
   const v = VORLAGEN[szenario];
   if (!v) return null;
   const i = v();
-  return i.zeilen.map((z) => ({ x: (z.x[0] - i.merkmale[0].min) / (i.merkmale[0].max - i.merkmale[0].min), y: (z.y - i.ziel.min) / (i.ziel.max - i.ziel.min), test: z.test }));
+  const n = (w: number, s: { min: number; max: number }) => (w - s.min) / (s.max - s.min);
+  // Bei zwei Merkmalen zeigt die Vorschau die Draufsicht; gefüllt = „ja“.
+  if (i.merkmale.length === 2) return i.zeilen.map((z) => ({ x: n(z.x[0], i.merkmale[0]), y: n(z.x[1], i.merkmale[1]), test: z.test, voll: z.y >= 0.5 }));
+  return i.zeilen.map((z) => ({ x: n(z.x[0], i.merkmale[0]), y: n(z.y, i.ziel), test: z.test, voll: i.art === 'klasse' && z.y >= 0.5 }));
 }

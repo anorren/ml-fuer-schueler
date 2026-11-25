@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { achsenwerte, falschEingeordnet, fehler, geradeEcht, klassenbereiche, kosten, lernschritt, modellNeu, punkteNorm, lesen, trainingFertig, verlaufErgaenzen, vorhersage, wahrscheinlichkeit, zahl } from './rechnen';
+import { achsenwerte, falschEingeordnet, fehler, geradeEcht, hoehenlinie, klassenbereiche, linearEcht, raster, sigmoid, kosten, lernschritt, modellNeu, punkteNorm, lesen, trainingFertig, verlaufErgaenzen, vorhersage, wahrscheinlichkeit, zahl } from './rechnen';
 import { inhaltHerstellen, istInhalt, vorschau } from './szenarien';
 import type { Gerade, Modell, ModellArt, Netz, TabellenInhalt } from './typen';
 
 const kiosk = () => inhaltHerstellen(null, 'schulkiosk') as unknown as TabellenInhalt;
 const szenario = (id: string, art?: ModellArt) => {
   const i = inhaltHerstellen(null, id) as unknown as TabellenInhalt;
-  if (art) i.modell = modellNeu(art, 1);
+  if (art) i.modell = modellNeu(art, i.merkmale.length);
   return i;
 };
 
@@ -172,6 +172,47 @@ describe('Klassen, S-Kurve und Netz (FR-14, FR-15)', () => {
   });
 });
 
+describe('Torschuss mit zwei Merkmalen (FR-19, FR-21)', () => {
+  it('sagt für einen nahen, geraden Schuss „Tor“ mit hoher Wahrscheinlichkeit voraus', () => {
+    const i = szenario('torschuss');
+    expect(i.merkmale.length).toBe(2);
+    trainieren(i, 5000);
+    expect(wahrscheinlichkeit(i, [6, 10])).toBeGreaterThan(0.8);
+    expect(wahrscheinlichkeit(i, [30, 60])).toBeLessThan(0.1);
+    expect(falschEingeordnet(i, true).falsch).toBeLessThanOrEqual(1);
+  });
+
+  it('die Grenze bei 50 % liegt in Draufsicht und 3D auf derselben Linie', () => {
+    const i = szenario('torschuss');
+    trainieren(i, 3000);
+    const { xs, ys, werte } = raster(i, 40);
+    const strecken = hoehenlinie(werte);
+    expect(strecken.length).toBeGreaterThan(10);
+    const echt = ([gx, gy]: [number, number]) => [xs[0] + (gx / 40) * (xs[40] - xs[0]), ys[0] + (gy / 40) * (ys[40] - ys[0])];
+    for (const [a, b] of strecken) for (const q of [a, b]) expect(Math.abs(vorhersage(i, echt(q)) - 0.5)).toBeLessThan(0.03);
+  });
+
+  it('rechnet die Ebene der S-Kurve in echte Einheiten um (FR-18)', () => {
+    const i = szenario('torschuss');
+    trainieren(i, 2000);
+    const { steigungen, achsenabschnitt } = linearEcht(i);
+    expect(steigungen[0]).toBeLessThan(0);
+    for (const [d, w] of [[5, 5], [20, 40]]) expect(sigmoid(steigungen[0] * d + steigungen[1] * w + achsenabschnitt)).toBeCloseTo(vorhersage(i, [d, w]), 6);
+  });
+
+  it('auch das Netz lernt mit zwei Merkmalen', () => {
+    const i = szenario('torschuss', 'netz');
+    const vorher = fehler(i)!;
+    trainieren(i, 1500);
+    expect(fehler(i)!).toBeLessThan(vorher * 0.6);
+  });
+
+  it('Höhenlinie eines einfachen Gitters', () => {
+    expect(hoehenlinie([[0, 1], [0, 1]])).toEqual([[[0.5, 0], [0.5, 1]]]);
+    expect(hoehenlinie([[0, 0], [0, 0]])).toEqual([]);
+  });
+});
+
 describe('Darstellungshilfen und Szenarien', () => {
   it('liefert schöne Achsenwerte', () => {
     expect(achsenwerte(10, 35)).toEqual([10, 15, 20, 25, 30, 35]);
@@ -195,10 +236,12 @@ describe('Darstellungshilfen und Szenarien', () => {
     expect(istInhalt(kaputt)).toBe(false);
     expect(inhaltHerstellen(kaputt, 'schulkiosk')).toMatchObject({ version: 1 });
     expect(inhaltHerstellen(null, 'Schulkiosk')).toMatchObject({ version: 1 });
-    expect(inhaltHerstellen(null, 'torschuss')).toEqual({});
+    expect(inhaltHerstellen(null, 'bias-kiosk')).toEqual({});
+    expect(istInhalt(szenario('torschuss', 'netz'))).toBe(true);
+    expect(vorschau('torschuss')!.filter((p) => p.voll).length).toBe(13);
     expect(istInhalt(szenario('bremsweg', 'netz'))).toBe(true);
     expect(istInhalt({ ...kiosk(), modell: { art: 'netz', w1: [[1]], b1: [0], w2: [], b2: 0 } })).toBe(false);
-    for (const id of ['hitzefrei', 'bremsweg']) expect(vorschau(id)!.every((p) => p.x >= 0 && p.x <= 1 && p.y >= 0 && p.y <= 1)).toBe(true);
+    for (const id of ['hitzefrei', 'bremsweg', 'torschuss']) expect(vorschau(id)!.every((p) => p.x >= 0 && p.x <= 1 && p.y >= 0 && p.y <= 1)).toBe(true);
     expect((inhaltHerstellen(null, null) as unknown as TabellenInhalt).zeilen).toEqual([]);
     expect(kiosk().erfunden).toBe(true);
     expect(vorschau('schulkiosk')!.every((p) => p.x >= 0 && p.x <= 1 && p.y >= 0 && p.y <= 1)).toBe(true);

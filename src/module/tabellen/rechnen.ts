@@ -154,17 +154,61 @@ function schrittAnwenden(m: Modell, g: Modell, lr: number): Modell {
 export const LERNRATE_STANDARD = 0.5;
 
 /**
- * Gerade bzw. innerer Teil der S-Kurve in echten Einheiten des Merkmals (FR-18):
- * Gerade: Zielgröße = steigung · Merkmal + achsenabschnitt; S-Kurve: z = steigung · Merkmal + achsenabschnitt.
+ * Gerade (Ebene) bzw. innerer Teil der S-Kurve in echten Einheiten der Merkmale (FR-18):
+ * Gerade: Zielgröße = Σ steigungₖ · Merkmalₖ + achsenabschnitt; S-Kurve: z = Σ steigungₖ · Merkmalₖ + achsenabschnitt.
  */
-export function geradeEcht(i: TabellenInhalt): { steigung: number; achsenabschnitt: number } {
+export function linearEcht(i: TabellenInhalt): { steigungen: number[]; achsenabschnitt: number } {
   const m = i.modell;
-  if (m.art === 'netz') return { steigung: NaN, achsenabschnitt: NaN };
-  const mx = i.merkmale[0], my = i.ziel;
-  const xr = mx.max - mx.min;
+  if (m.art === 'netz') return { steigungen: i.merkmale.map(() => NaN), achsenabschnitt: NaN };
+  const my = i.ziel;
   const yr = m.art === 'skurve' ? 1 : my.max - my.min, y0 = m.art === 'skurve' ? 0 : my.min;
-  const w = m.w[0];
-  return { steigung: (yr * w) / xr, achsenabschnitt: y0 + yr * (m.b - (w * mx.min) / xr) };
+  const steigungen = i.merkmale.map((s, k) => (yr * m.w[k]) / (s.max - s.min));
+  const verschiebung = i.merkmale.reduce((a, s, k) => a + (m.w[k] * s.min) / (s.max - s.min), 0);
+  return { steigungen, achsenabschnitt: y0 + yr * (m.b - verschiebung) };
+}
+
+/** Gerade mit einem Merkmal in echten Einheiten (Kurzform von linearEcht). */
+export function geradeEcht(i: TabellenInhalt): { steigung: number; achsenabschnitt: number } {
+  const { steigungen, achsenabschnitt } = linearEcht(i);
+  return { steigung: steigungen[0], achsenabschnitt };
+}
+
+/** Modellwerte auf einem Gitter über zwei Merkmale: werte[j][k] bei Merkmal 1 = xs[k], Merkmal 2 = ys[j] (FR-20, FR-21). */
+export function raster(i: TabellenInhalt, n = 60): { xs: number[]; ys: number[]; werte: number[][] } {
+  const [a, b] = i.merkmale;
+  const xs = Array.from({ length: n + 1 }, (_, k) => a.min + ((a.max - a.min) * k) / n);
+  const ys = Array.from({ length: n + 1 }, (_, j) => b.min + ((b.max - b.min) * j) / n);
+  return { xs, ys, werte: ys.map((y) => xs.map((x) => vorhersage(i, [x, y]))) };
+}
+
+export type Strecke = [[number, number], [number, number]];
+
+/**
+ * Höhenlinie (Marching Squares) auf einem Gitter: Strecken in Gitterkoordinaten (Spalte, Zeile, gebrochen).
+ * Draufsicht und 3D-Fläche nutzen dieselbe Linie bei 50 %, damit beide dieselbe Grenze zeigen (FR-21).
+ */
+export function hoehenlinie(werte: number[][], stufe = 0.5): Strecke[] {
+  const strecken: Strecke[] = [];
+  const t = (a: number, b: number) => (a === b ? 0.5 : (stufe - a) / (b - a));
+  for (let j = 0; j < werte.length - 1; j++) {
+    for (let k = 0; k < werte[j].length - 1; k++) {
+      const v00 = werte[j][k], v10 = werte[j][k + 1], v01 = werte[j + 1][k], v11 = werte[j + 1][k + 1];
+      // Schnittpunkte auf den vier Kanten: unten, rechts, oben, links
+      const kanten: [number, number][] = [];
+      if (v00 >= stufe !== v10 >= stufe) kanten.push([k + t(v00, v10), j]);
+      if (v10 >= stufe !== v11 >= stufe) kanten.push([k + 1, j + t(v10, v11)]);
+      if (v01 >= stufe !== v11 >= stufe) kanten.push([k + t(v01, v11), j + 1]);
+      if (v00 >= stufe !== v01 >= stufe) kanten.push([k, j + t(v00, v01)]);
+      if (kanten.length === 2) strecken.push([kanten[0], kanten[1]]);
+      else if (kanten.length === 4) {
+        // Sattel: nach dem Mittelwert der Zelle verbinden
+        const mitte = (v00 + v10 + v01 + v11) / 4 >= stufe;
+        if (mitte === v00 >= stufe) strecken.push([kanten[0], kanten[1]], [kanten[2], kanten[3]]);
+        else strecken.push([kanten[0], kanten[3]], [kanten[1], kanten[2]]);
+      }
+    }
+  }
+  return strecken;
 }
 
 /**

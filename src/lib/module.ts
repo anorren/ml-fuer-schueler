@@ -31,7 +31,7 @@ export interface Modul {
   /** Macht aus gespeichertem oder fehlendem Inhalt einen gültigen Projektinhalt. */
   inhaltHerstellen?: (roh: unknown, szenario: string | null) => Record<string, unknown>;
   /** Punkte für das Vorschaubild in der Galerie (0 … 1). */
-  vorschau?: (szenario: string) => { x: number; y: number; test: boolean }[] | null;
+  vorschau?: (szenario: string) => { x: number; y: number; test: boolean; voll?: boolean }[] | null;
 }
 
 /** Was der Rahmen einer Modulansicht übergibt (NFR-08). */

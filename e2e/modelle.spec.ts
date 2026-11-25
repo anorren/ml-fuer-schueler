@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 
-// Etappe 2 · Schritt 3: Klassen mit Wahrscheinlichkeit (FR-14), Modellwahl Gerade, S-Kurve, Netz (FR-15), Klassenbereiche (FR-20)
+// Etappe 2 · Schritt 3 und 4: Klassen mit Wahrscheinlichkeit (FR-14), Modellwahl (FR-15), Klassenbereiche (FR-20), Torschuss mit Draufsicht und 3D (FR-19, FR-21)
 
 const zahlAus = (t: string) => Number(t.replace(/[^\d,]/g, '').replace(',', '.'));
 const fehlerWert = async (p: Page) => zahlAus(await p.locator('.fehler .wert').innerText());
@@ -100,4 +100,67 @@ test('Stufe 3 zeigt Formel der S-Kurve und Gewichte des Netzes (FR-18)', async (
   await page.getByRole('button', { name: 'Ein Lernschritt' }).click();
   await expect(page.locator('.rechenweg')).toContainText(/v₁: −?[\d,]+ − 0,2 · /);
   await expect(page.locator('.rechenweg')).toContainText('Backpropagation');
+});
+
+test('Torschuss: Draufsicht mit Bereich „Tor“ und Vorhersage mit Wahrscheinlichkeit (FR-19, FR-20)', async ({ page }) => {
+  await oeffnen(page, /Torschuss/, /Draufsicht: Winkel \(°\) über Entfernung \(m\)/);
+  await expect(page.locator('circle.training.ja')).toHaveCount(11);
+  await trainieren(page);
+  expect(await page.locator('path.grenze').getAttribute('d')).toMatch(/^M/);
+  expect(await page.locator('g.ja-bereich rect').count()).toBeGreaterThan(20);
+  await page.getByRole('button', { name: 'Vorhersage', exact: true }).click();
+  await page.locator('#frage').fill('8');
+  await page.locator('#frage').press('Enter');
+  await page.locator('#frage2').fill('10');
+  await page.locator('#frage2').press('Enter');
+  await expect(page.locator('.antwort')).toHaveText('Tor');
+  await expect(page.getByText(/^Wahrscheinlichkeit: \d+ %$/)).toBeVisible();
+  await expect(page.locator('g.etikett')).toContainText('8 m, 10 ° › Tor');
+});
+
+test('Torschuss: neue Punkte mit gewählter Klasse, Klasse wechseln (FR-11)', async ({ page }) => {
+  await oeffnen(page, /Torschuss/, /Draufsicht/);
+  await page.getByRole('button', { name: 'Daten', exact: true }).click();
+  await page.getByRole('group', { name: 'Klasse neuer Punkte' }).getByRole('button', { name: 'kein Tor' }).click();
+  const box = (await page.locator('svg[role=img]').boundingBox())!;
+  await page.mouse.click(box.x + box.width * 0.85, box.y + box.height * 0.3);
+  await expect(page.locator('circle.training:not(.ja)')).toHaveCount(14);
+  await page.getByRole('button', { name: 'Klasse wechseln' }).click();
+  await expect(page.locator('circle.training.ja')).toHaveCount(12);
+});
+
+test('3D-Ansicht ab Stufe 2: drehen, zoomen, zurücksetzen (FR-21)', async ({ page }) => {
+  await oeffnen(page, /Torschuss/, /Draufsicht/);
+  await expect(page.getByRole('button', { name: '3D', exact: true })).toHaveCount(0);
+  await page.getByRole('radio', { name: '2' }).click();
+  await trainieren(page);
+  await page.getByRole('button', { name: '3D', exact: true }).click();
+  await expect(page.getByRole('img', { name: /3D-Ansicht: Wahrscheinlichkeit für „Tor“/ })).toBeVisible();
+  const leinwand = page.locator('canvas');
+  const start = await leinwand.getAttribute('data-drehung');
+  const c = (await leinwand.boundingBox())!;
+  await page.mouse.move(c.x + c.width * 0.3, c.y + c.height * 0.4);
+  await page.mouse.down();
+  await page.mouse.move(c.x + c.width * 0.3 + 100, c.y + c.height * 0.4, { steps: 6 });
+  await page.mouse.up();
+  expect(await leinwand.getAttribute('data-drehung')).not.toBe(start);
+  // Das iPad kennt kein Mausrad; das Zoomen mit zwei Fingern wird hier über das Rad-Ereignis des Rechners geprüft.
+  await leinwand.dispatchEvent('wheel', { deltaY: -300 });
+  await expect(leinwand).not.toHaveAttribute('data-zoom', '1.00');
+  await page.getByRole('button', { name: 'Ansicht zurücksetzen' }).click();
+  // Zwei Finger auseinanderziehen vergrößert die Fläche
+  await leinwand.evaluate((el) => {
+    const p = (typ: string, id: number, x: number) => el.dispatchEvent(new PointerEvent(typ, { pointerId: id, clientX: x, clientY: 300, bubbles: true, pointerType: 'touch' }));
+    p('pointerdown', 11, 400);
+    p('pointerdown', 12, 500);
+    p('pointermove', 12, 600);
+    p('pointerup', 11, 400);
+    p('pointerup', 12, 600);
+  });
+  await expect(leinwand).toHaveAttribute('data-zoom', '2.00');
+  await page.getByRole('button', { name: 'Ansicht zurücksetzen' }).click();
+  await expect(leinwand).toHaveAttribute('data-drehung', start!);
+  await expect(leinwand).toHaveAttribute('data-zoom', '1.00');
+  await page.getByRole('button', { name: '3D', exact: true }).click();
+  await expect(page.getByRole('img', { name: /Draufsicht/ })).toBeVisible();
 });
