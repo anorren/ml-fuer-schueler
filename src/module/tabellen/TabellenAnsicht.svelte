@@ -14,6 +14,8 @@
   import NetzBild from './NetzBild.svelte';
   import Draufsicht from './Draufsicht.svelte';
   import Ansicht3D from './Ansicht3D.svelte';
+  import ThemaEditor from './ThemaEditor.svelte';
+  import { entwurfAus, themaAnwenden, type ThemaEntwurf } from './thema';
   import type { ModellArt, TabellenInhalt } from './typen';
   import {
     falschEingeordnet,
@@ -71,6 +73,19 @@
   const ansicht3d = $derived(zwei && offenId === '3d');
   let blick = $state<ReturnType<typeof Ansicht3D>>();
   let neueKlasse = $state(1);
+  // Eigenes Thema (FR-13): Ein leeres Projekt beginnt mit dem Anlegen des Themas; später lässt es sich ändern.
+  const einrichten = $derived(!!i.eigen && !i.thema);
+  let themaOffen = $state(false);
+
+  function themaUebernehmen(e: ThemaEntwurf) {
+    anhalten();
+    themaAnwenden(i, e);
+    letzter = null;
+    auswahl = null;
+    themaOffen = false;
+    offenId = 'daten';
+    onGeaendert();
+  }
   const grenzen = $derived(klasse && art !== 'netz' && !zwei ? klassenbereiche(i).grenzen : []);
   const ebene = $derived(linearEcht(i));
   const tief = ['₁', '₂', '₃'];
@@ -232,6 +247,17 @@
   });
 </script>
 
+{#if einrichten || themaOffen}
+  <section class="leinwand einrichten">
+    <ThemaEditor
+      start={entwurfAus(i)}
+      aendern={!einrichten}
+      bisher={{ art: i.art, eingaben: i.merkmale.length, zeilen: i.zeilen.length }}
+      onFertig={themaUebernehmen}
+      onAbbrechen={() => (themaOffen = false)}
+    />
+  </section>
+{:else}
 <section class="leinwand">
   <div class="diagramm karte">
     <div class="plot">
@@ -309,6 +335,9 @@
               <button onclick={() => testUmschalten(gewaehlt.id)}>{gewaehlt.test ? 'Zu Trainingsdaten' : 'Zu Testdaten'}</button>
               <button onclick={() => loeschen(gewaehlt.id)}>Löschen</button>
             </div>
+          {/if}
+          {#if i.eigen}
+            <div class="zeile"><button onclick={() => (themaOffen = true)} use:erklaert={'Öffnet Namen, Einheiten und Bereiche eures Themas zum Ändern.'}>Thema ändern</button></div>
           {/if}
           {#if !tabelleSichtbar}
             <div class="tabellenbox"><DatenTabelle {i} {auswahl} onAuswahl={(id) => (auswahl = id)} onAendern={onGeaendert} /></div>
@@ -459,8 +488,11 @@
     <button class="haupt trainieren" onclick={trainieren} disabled={!anzahlTraining} use:erklaert={BEDIENUNG.trainieren}>{laeuft ? 'Anhalten ❚❚' : 'Trainieren ▶'}</button>
   </Leiste>
 </section>
+{/if}
 
 <style>
+  /* Das Formular wächst mit seinem Inhalt; die Seite scrollt, statt den Knopf abzuschneiden. */
+  .einrichten { justify-content: center; align-items: flex-start; padding-bottom: 24px; height: auto; }
   .leinwand { position: relative; flex: none; padding: 12px 16px 96px; display: flex; gap: 12px; height: calc(100vh - 100px); min-height: 520px; }
   .diagramm { position: relative; flex: 1; min-width: 0; }
   .plot { position: absolute; inset: 8px 8px 4px; }

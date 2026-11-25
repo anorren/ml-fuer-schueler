@@ -64,4 +64,8 @@ export interface TabellenInhalt {
   /** Eingabe für die Vorhersage (FR-19). */
   frage: number[] | null;
   naechsteId: number;
+  /** Eigenes Thema (FR-13): Name des Themas; fehlt er, ist das Thema noch nicht angelegt. */
+  thema?: string;
+  /** Projekt mit eigenem Thema statt eines vorbereiteten Szenarios. */
+  eigen?: boolean;
 }

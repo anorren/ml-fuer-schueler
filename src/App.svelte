@@ -146,7 +146,7 @@
   {stufe}
   {gesichert}
   {online}
-  titel={ansicht === 'arbeit' ? szenarioTitel(modul, projekt?.szenario ?? null) : ansicht === 'machbarkeit' ? 'Machbarkeitstest' : ''}
+  titel={ansicht === 'arbeit' ? ((projekt?.inhalt as { thema?: string } | undefined)?.thema || szenarioTitel(modul, projekt?.szenario ?? null)) : ansicht === 'machbarkeit' ? 'Machbarkeitstest' : ''}
   team={ansicht === 'arbeit' ? (projekt?.team ?? '') : undefined}
   onTeam={teamAendern}
   onStufe={stufeWechseln}

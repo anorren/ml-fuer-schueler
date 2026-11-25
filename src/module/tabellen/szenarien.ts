@@ -78,15 +78,18 @@ const VORLAGEN: Record<string, () => TabellenInhalt> = {
     })
 };
 
-/** Leeres Projekt: zwei neutrale Spalten, Punkte setzen die Kinder selbst (eigene Themen folgen mit FR-13). */
+/** Leeres Projekt: Die Kinder legen zuerst ihr eigenes Thema an (FR-13), dann tragen sie ihre Messwerte ein. */
 function leer(): TabellenInhalt {
-  return grundinhalt({
-    art: 'zahl',
-    erfunden: false,
-    merkmale: [{ name: 'Eingabe', einheit: 'Einheit', min: 0, max: 10, stellen: 1 }],
-    ziel: { name: 'Ergebnis', einheit: 'Einheit', min: 0, max: 10, stellen: 1 },
-    zeilen: []
-  });
+  return {
+    ...grundinhalt({
+      art: 'zahl',
+      erfunden: false,
+      merkmale: [{ name: 'Eingabe', einheit: 'Einheit', min: 0, max: 10, stellen: 1 }],
+      ziel: { name: 'Ergebnis', einheit: 'Einheit', min: 0, max: 10, stellen: 1 },
+      zeilen: []
+    }),
+    eigen: true
+  };
 }
 
 export function hatDaten(szenario: string | null): boolean {
