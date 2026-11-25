@@ -1,0 +1,53 @@
+/* Stilwerte VD-1 mit Farbkonzept (Designentwurf 1.1, design/Stilwerte.json):
+   Blau = Modell, Orange = was wir das Modell fragen, Grün/Rot nur Status. */
+:root {
+  --hintergrund: #f9f9f7;
+  --flaeche: #ffffff;
+  --schrift: #0b0b0b;
+  --schrift2: #52514e;
+  --schrift3: #898781;
+  --linie: #e1e0d9;
+  --modell: #2a78d6;
+  --modell-hell: #e6effb;
+  --frage: #d9700b;
+  --frage-text: #a85400;
+  --frage-hell: #fdeedd;
+  --status-gut: #1f8a4c;
+  --status-achtung: #c93a3a;
+  --radius-karte: 12px;
+  --radius-knopf: 8px;
+  --schatten: 0 1px 2px rgba(0, 0, 0, 0.06);
+  --tippflaeche: 44px;
+  --schriftart: -apple-system, 'Helvetica Neue', Helvetica, sans-serif;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body {
+  font: 15px/1.45 var(--schriftart);
+  color: var(--schrift);
+  background: var(--hintergrund);
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+#app { min-height: 100%; display: flex; flex-direction: column; }
+h1 { font-size: 28px; margin: 0; letter-spacing: -0.01em; }
+h2 { font-size: 17px; margin: 0; }
+.label { font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--schrift3); font-weight: 600; }
+.leise { color: var(--schrift2); }
+.klein { font-size: 13px; }
+.karte { background: var(--flaeche); border: 1px solid var(--linie); border-radius: var(--radius-karte); box-shadow: var(--schatten); }
+
+button, .knopf {
+  font: inherit; font-size: 14px; color: var(--schrift);
+  min-height: var(--tippflaeche); padding: 0 14px;
+  border: 1px solid var(--linie); border-radius: var(--radius-knopf); background: var(--flaeche);
+  cursor: pointer; white-space: nowrap;
+}
+button:disabled { opacity: 0.45; cursor: default; }
+button.haupt { background: var(--modell); border-color: var(--modell); color: #fff; }
+button.frage { background: var(--frage-hell); border-color: var(--frage-hell); }
+button:focus-visible { outline: 3px solid var(--modell); outline-offset: 2px; }
+
+.status-gut { color: var(--status-gut); }
+.status-achtung { color: var(--status-achtung); }
