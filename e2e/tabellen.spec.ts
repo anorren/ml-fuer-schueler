@@ -10,6 +10,9 @@ async function kiosk(p: Page) {
   await expect(p.getByRole('img', { name: /Verkaufte Eis/ })).toBeVisible();
 }
 
+/** y-Wert des Modells am rechten Rand (SVG-Koordinate). */
+const rechtsY = async (p: Page) => Number((await p.locator('polyline.modell').getAttribute('points'))!.split(' ').pop()!.split(',')[1]);
+
 async function trainieren(p: Page) {
   await p.getByRole('button', { name: /Trainieren/ }).click();
   await expect(p.getByRole('button', { name: /Trainieren/ })).toBeVisible({ timeout: 20_000 });
@@ -26,13 +29,13 @@ test('Achsen tragen Name und Einheit, Daten sind als erfunden gekennzeichnet (FR
 
 test('Ein Lernschritt bewegt die Linie, Training senkt den Fehler sichtbar (FR-16)', async ({ page }) => {
   await kiosk(page);
-  const linie = page.locator('line.modell');
-  const vorher = await linie.getAttribute('y2');
+  const linie = page.locator('polyline.modell');
+  const vorher = await linie.getAttribute('points');
   const fehlerStart = await fehlerWert(page);
   await page.getByRole('button', { name: 'Training', exact: true }).click();
   await page.getByRole('button', { name: 'Ein Lernschritt' }).click();
   await expect(page.getByText('Lernschritte: 1')).toBeVisible();
-  expect(await linie.getAttribute('y2')).not.toBe(vorher);
+  expect(await linie.getAttribute('points')).not.toBe(vorher);
   await expect(page.locator('line.abstand')).toHaveCount(12);
   await trainieren(page);
   expect(await fehlerWert(page)).toBeLessThan(fehlerStart / 5);
@@ -68,13 +71,13 @@ test('Punkt setzen im Diagramm und Zeile in der Tabelle ergänzen (FR-11, FR-12)
 test('Ausreißer verändert die Gerade nach erneutem Training (FR-11)', async ({ page }) => {
   await kiosk(page);
   await trainieren(page);
-  const vorher = Number(await page.locator('line.modell').getAttribute('y2'));
+  const vorher = await rechtsY(page);
   await page.getByRole('button', { name: 'Daten', exact: true }).click();
   await page.getByLabel('Verkaufte Eis Zeile 12').fill('10');
   await page.getByLabel('Verkaufte Eis Zeile 12').press('Enter');
   await page.getByRole('button', { name: 'Daten', exact: true }).click();
   await trainieren(page);
-  expect(Number(await page.locator('line.modell').getAttribute('y2'))).toBeGreaterThan(vorher + 20);
+  expect(await rechtsY(page)).toBeGreaterThan(vorher + 20);
 });
 
 test('Trainiertes Projekt übersteht Speichern und Öffnen (FR-04, FR-05)', async ({ page }) => {

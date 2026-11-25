@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { TabellenInhalt } from './typen';
-  import { zahl } from './rechnen';
+  import { lesen, zahl } from './rechnen';
 
   // Tabelle zum Ansehen und Eingeben (FR-12); Änderungen erscheinen sofort im Diagramm und umgekehrt.
   interface Props {
@@ -11,11 +11,15 @@
   }
   let { i, auswahl, onAuswahl, onAendern }: Props = $props();
 
-  function lesen(text: string): number | null {
-    const v = Number(text.replace(',', '.').trim());
-    return text.trim() !== '' && Number.isFinite(v) ? v : null;
-  }
   const klemmen = (v: number, min: number, max: number) => Math.min(Math.max(v, min), max);
+  // Bei Klassen (FR-14) wählt man die Klasse aus, statt eine Zahl einzugeben.
+  const klassen = $derived(i.art === 'klasse' ? (i.ziel.klassen ?? ['nein', 'ja']) : null);
+  function setzeKlasse(id: number, wert: string) {
+    const z = i.zeilen.find((z) => z.id === id);
+    if (!z) return;
+    z.y = Number(wert);
+    onAendern();
+  }
 
   function setzeX(id: number, k: number, text: string) {
     const z = i.zeilen.find((z) => z.id === id), v = lesen(text);
@@ -31,7 +35,7 @@
   }
   function neueZeile() {
     const id = i.naechsteId++;
-    i.zeilen.push({ id, x: i.merkmale.map((m) => (m.min + m.max) / 2), y: (i.ziel.min + i.ziel.max) / 2, test: false });
+    i.zeilen.push({ id, x: i.merkmale.map((m) => (m.min + m.max) / 2), y: klassen ? 0 : (i.ziel.min + i.ziel.max) / 2, test: false });
     onAuswahl(id);
     onAendern();
   }
@@ -58,7 +62,16 @@
           {#each z.x as v, k}
             <td><input inputmode="decimal" aria-label="{i.merkmale[k].name} Zeile {z.id}" value={zahl(v, i.merkmale[k].stellen, false)} onchange={(e) => setzeX(z.id, k, e.currentTarget.value)} /></td>
           {/each}
-          <td><input inputmode="decimal" aria-label="{i.ziel.name} Zeile {z.id}" value={zahl(z.y, i.ziel.stellen, false)} onchange={(e) => setzeY(z.id, e.currentTarget.value)} /></td>
+          <td>
+            {#if klassen}
+              <select aria-label="{i.ziel.name} Zeile {z.id}" value={String(z.y >= 0.5 ? 1 : 0)} onchange={(e) => setzeKlasse(z.id, e.currentTarget.value)}>
+                <option value="0">{klassen[0]}</option>
+                <option value="1">{klassen[1]}</option>
+              </select>
+            {:else}
+              <input inputmode="decimal" aria-label="{i.ziel.name} Zeile {z.id}" value={zahl(z.y, i.ziel.stellen, false)} onchange={(e) => setzeY(z.id, e.currentTarget.value)} />
+            {/if}
+          </td>
           <td><input type="checkbox" aria-label="Zeile {z.id} als Testdaten" checked={z.test} onchange={(e) => { z.test = e.currentTarget.checked; onAendern(); }} /></td>
           <td><button class="weg" aria-label="Zeile {z.id} löschen" onclick={() => loeschen(z.id)}>✕</button></td>
         </tr>
@@ -78,6 +91,8 @@
   tr.test input:not([type='checkbox']) { color: var(--frage-text); }
   input:not([type='checkbox']) { font: inherit; width: 100%; min-width: 56px; min-height: 36px; padding: 0 8px; border: 1px solid transparent; border-radius: 6px; background: none; font-variant-numeric: tabular-nums; }
   input:not([type='checkbox']):focus { border-color: var(--modell); outline: none; background: var(--flaeche); }
+  select { font: inherit; width: 100%; min-width: 64px; min-height: 36px; padding: 0 6px; border: 1px solid var(--linie); border-radius: 6px; background: var(--flaeche); }
+  tr.test select { color: var(--frage-text); }
   input[type='checkbox'] { width: 22px; height: 22px; accent-color: var(--frage); }
   .weg { min-height: 36px; min-width: 36px; padding: 0; border: 0; background: none; color: var(--schrift2); }
   .neu { align-self: flex-start; }

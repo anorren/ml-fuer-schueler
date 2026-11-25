@@ -38,11 +38,31 @@ export const BEGRIFFE: Record<string, Begriff> = {
   },
   kostenfunktion: {
     wort: 'Kostenfunktion',
-    erklaerung: 'Die Kostenfunktion misst mit einer Zahl, wie schlecht das Modell passt. Hier mittelt sie die quadrierten Abstände der Punkte zur Geraden.'
+    erklaerung: 'Die Kostenfunktion misst mit einer Zahl, wie schlecht das Modell passt. Bei Zahlen mittelt sie die quadrierten Abstände, bei Klassen bestraft sie sichere falsche Antworten besonders stark.'
   },
   gradientenabstieg: {
     wort: 'Gradientenabstieg',
     erklaerung: 'Der Gradientenabstieg verbessert das Modell Schritt für Schritt. Er schiebt es jeweils in die Richtung, in der die Kosten am schnellsten sinken.'
+  },
+  skurve: {
+    wort: 'S-Kurve',
+    erklaerung: 'Eine Kurve, die von 0 % langsam auf 100 % steigt. Sie gibt an, wie wahrscheinlich die Antwort „ja“ ist.'
+  },
+  wahrscheinlichkeit: {
+    wort: 'Wahrscheinlichkeit',
+    erklaerung: 'Die Wahrscheinlichkeit sagt, wie sicher sich das Modell ist, von 0 % bis 100 %. Auch bei 80 % kann die Antwort falsch sein.'
+  },
+  klassengrenze: {
+    wort: 'Klassengrenze',
+    erklaerung: 'An der Grenze wechselt die Vorhersage von „nein“ zu „ja“. Dort liegt die Wahrscheinlichkeit genau bei 50 %.'
+  },
+  netz: {
+    wort: 'Netz',
+    erklaerung: 'Ein neuronales Netz besteht aus vielen kleinen Rechenbausteinen, den Neuronen. Zusammen können sie auch gebogene Zusammenhänge lernen.'
+  },
+  neuron: {
+    wort: 'Neuron',
+    erklaerung: 'Ein Neuron ist ein kleiner Rechenbaustein im Netz. Jedes formt einen Knick oder eine Biegung, zusammen ergeben sie die Kurve.'
   },
   normiert: {
     wort: 'normiert',

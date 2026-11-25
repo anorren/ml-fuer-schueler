@@ -11,10 +11,31 @@
   import Diagramm from './Diagramm.svelte';
   import FehlerAnzeige from './FehlerAnzeige.svelte';
   import DatenTabelle from './DatenTabelle.svelte';
-  import type { TabellenInhalt } from './typen';
-  import { fehler, geradeEcht, kosten, LERNRATE_STANDARD, lernschritt, punkteNorm, trainingFertig, verlaufErgaenzen, vorhersage, zahl, type Lernschritt } from './rechnen';
+  import NetzBild from './NetzBild.svelte';
+  import type { ModellArt, TabellenInhalt } from './typen';
+  import {
+    falschEingeordnet,
+    fehler,
+    geradeEcht,
+    klassenbereiche,
+    kosten,
+    lesen,
+    LERNRATE_STANDARD,
+    lernschritt,
+    mitKreuzentropie,
+    modellNeu,
+    NEURONEN_HOECHSTENS,
+    NEURONEN_STANDARD,
+    punkteNorm,
+    trainingFertig,
+    verlaufErgaenzen,
+    vorhersage,
+    wahrscheinlichkeit,
+    zahl,
+    type Lernschritt
+  } from './rechnen';
 
-  // Modul „Lernen aus Tabellen“: Leinwand mit Diagramm, Karten und Training (FR-11, FR-12, FR-16, FR-19, FR-20, FR-22).
+  // Modul „Lernen aus Tabellen“: Leinwand mit Diagramm, Karten und Training (FR-11 bis FR-20, FR-22).
   let { stufe, modul, inhalt = $bindable(), tipp, onTippWeg, onGeaendert, onWerte }: AnsichtProps = $props();
   const i = $derived(inhalt as unknown as TabellenInhalt);
 
@@ -30,15 +51,29 @@
   let laufSchritte = 0;
 
   const anzahlTraining = $derived(i.zeilen.filter((z) => !z.test).length);
+  const klasse = $derived(i.art === 'klasse');
+  const klassen = $derived(i.ziel.klassen ?? ['nein', 'ja']);
+  const art = $derived(i.modell.art);
+  const netz = $derived(i.modell.art === 'netz' ? i.modell : null);
   const fehlerTraining = $derived(fehler(i));
   const fehlerTest = $derived(fehler(i, true));
+  const falsch = $derived(klasse ? falschEingeordnet(i) : null);
+  const falschTest = $derived(klasse ? falschEingeordnet(i, true) : null);
   const einheitWort = $derived(i.ziel.wort ?? i.ziel.einheit);
+  const zielText = (y: number) => (klasse ? klassen[y >= 0.5 ? 1 : 0] : `${zahl(y, i.ziel.stellen)} ${einheitWort}`);
   const frageWert = $derived(i.frage ? vorhersage(i, i.frage) : null);
+  const frageJa = $derived(i.frage ? wahrscheinlichkeit(i, i.frage) : null);
+  const grenzen = $derived(klasse && art !== 'netz' ? klassenbereiche(i).grenzen : []);
   // FR-17: Lernrate erst ab Stufe 2 einstellbar; auf Stufe 1 gilt die Standardrate, ohne die gespeicherte Wahl zu verlieren.
   const lernrate = $derived(stufe >= 2 ? i.lernrate : LERNRATE_STANDARD);
   let letzter = $state<Lernschritt | null>(null);
   const gerade = $derived(geradeEcht(i));
-  const kostenJetzt = $derived(kosten(i.modell, punkteNorm(i)));
+  const kostenJetzt = $derived(kosten(i.modell, punkteNorm(i), klasse));
+  const ce = $derived(mitKreuzentropie(i.modell, klasse));
+  // Das Netz braucht mehr, dafür kleinere Schritte; damit es nicht ewig dauert, rechnet es mehr Schritte je Bild.
+  // Die S-Kurve wird am Ende nur langsam steiler; sie rechnet deshalb viele kleine Schritte je Bild.
+  const jeBild = $derived(art === 'netz' ? 4 : art === 'skurve' ? 10 : 2);
+  const hoechstens = $derived(art === 'netz' ? 1600 : art === 'skurve' ? 5000 : 800);
   const MERKMAL = $derived(i.merkmale[0].name);
   const ZIEL = $derived(i.ziel.wort ?? i.ziel.name);
 
@@ -47,13 +82,13 @@
   function schritt(): boolean {
     const p = punkteNorm(i);
     if (!p.length) return false;
-    const s = lernschritt(i.modell, p, lernrate);
+    const s = lernschritt(i.modell, p, lernrate, klasse);
     letzter = s;
-    const spanne = i.ziel.max - i.ziel.min;
-    if (!i.verlauf.length) i.verlauf = verlaufErgaenzen(i.verlauf, Math.sqrt(s.kostenVorher) * spanne);
+    if (!i.verlauf.length) i.verlauf = verlaufErgaenzen(i.verlauf, fehler(i) ?? 0);
     i.modell = s.nachher;
     i.schritte += 1;
-    i.verlauf = verlaufErgaenzen(i.verlauf, Math.sqrt(s.kostenNachher) * spanne);
+    const f = fehler(i) ?? 0;
+    i.verlauf = verlaufErgaenzen(i.verlauf, Number.isFinite(f) ? f : 1e9);
     // Läuft das Modell weg (Lernrate zu groß), endet das Training, bevor die Gerade ganz verschwindet.
     return Number.isFinite(s.kostenNachher) && s.kostenNachher < 4;
   }
@@ -67,9 +102,9 @@
   let pause = 0;
 
   function bild() {
-    for (let k = 0; k < 2; k++) {
+    for (let k = 0; k < jeBild; k++) {
       laufSchritte += 1;
-      if (!schritt() || trainingFertig(i.verlauf) || laufSchritte >= 800) return anhalten();
+      if (!schritt() || trainingFertig(i.verlauf) || laufSchritte >= hoechstens) return anhalten();
       // Steigt der Fehler, läuft das Training langsam weiter, damit man das Springen sieht (FR-17).
       const v = i.verlauf;
       if (v.length > 1 && v[v.length - 1] > v[v.length - 2]) {
@@ -95,14 +130,16 @@
     onGeaendert();
   }
 
-  function vonVorn() {
+  function neuesModell(art: ModellArt, neuronen = netz?.w2.length ?? NEURONEN_STANDARD) {
     anhalten();
-    i.modell = { art: 'gerade', w: i.merkmale.map(() => 0), b: 0 };
+    i.modell = modellNeu(art, i.merkmale.length, neuronen);
     i.schritte = 0;
     i.verlauf = [];
     letzter = null;
     onGeaendert();
   }
+
+  const vonVorn = () => neuesModell(art);
 
   function lernrateSetzen(v: number) {
     i.lernrate = v;
@@ -148,8 +185,8 @@
   }
 
   function frageEingabe(text: string) {
-    const v = Number(text.replace(',', '.').trim());
-    if (text.trim() === '' || !Number.isFinite(v)) return;
+    const v = lesen(text);
+    if (v === null) return;
     const m = i.merkmale[0];
     frageSetzen(Math.min(Math.max(v, m.min), m.max));
   }
@@ -175,13 +212,21 @@
       />
     </div>
     <div class="legende klein">
-      <span><i class="kreis"></i>Trainingsdaten</span>
-      <span><i class="quadrat"></i>Testdaten</span>
-      <span><i class="strich"></i>Modell</span>
+      {#if klasse}
+        <span><i class="kreis voll"></i>{klassen[1]}</span>
+        <span><i class="kreis"></i>{klassen[0]}</span>
+        <span><i class="quadrat"></i>Testdaten</span>
+        <span><i class="strich"></i>Modell</span>
+        <span><i class="schraffur"></i>Bereich „{klassen[1]}“</span>
+      {:else}
+        <span><i class="kreis"></i>Trainingsdaten</span>
+        <span><i class="quadrat"></i>Testdaten</span>
+        <span><i class="strich"></i>Modell</span>
+      {/if}
       {#if i.frage}<span><i class="raute"></i>Vorhersage</span>{/if}
       {#if i.erfunden}<span class="leise">Beispieldaten, erfunden</span>{/if}
     </div>
-    <FehlerAnzeige wert={fehlerTraining} verlauf={i.verlauf} einheit={einheitWort} />
+    <FehlerAnzeige wert={fehlerTraining} verlauf={i.verlauf} einheit={einheitWort} prozent={klasse} zusatz={falsch && falsch.von ? `${falsch.falsch} von ${falsch.von} falsch eingeordnet` : null} />
     {#if tipp}<Tipp text={tipp} onWeg={onTippWeg} />{/if}
   </div>
 
@@ -195,10 +240,10 @@
     <div class="schublade">
       <InfoKarte titel={offen.name} info={offen.info} frage={offen.id === 'vorhersage'} onSchliessen={() => (offenId = null)}>
         {#if offen.id === 'daten'}
-          <p class="klein leise">Tippt ins Diagramm, um einen Punkt zu setzen. Zieht einen Punkt, um ihn zu verschieben, oder tippt ihn an, um ihn auszuwählen.</p>
+          <p class="klein leise">Tippt ins Diagramm, um einen Punkt zu setzen{klasse ? `: oben „${klassen[1]}“, unten „${klassen[0]}“` : ''}. Zieht einen Punkt, um ihn zu verschieben, oder tippt ihn an, um ihn auszuwählen.</p>
           {#if gewaehlt}
             <div class="zeile">
-              <span>Ausgewählt: <strong>{zahl(gewaehlt.x[0], i.merkmale[0].stellen)} {i.merkmale[0].einheit} · {zahl(gewaehlt.y, i.ziel.stellen)} {einheitWort}</strong></span>
+              <span>Ausgewählt: <strong>{zahl(gewaehlt.x[0], i.merkmale[0].stellen)} {i.merkmale[0].einheit} · {zielText(gewaehlt.y)}</strong></span>
               <span class="raum"></span>
               <button onclick={() => testUmschalten(gewaehlt.id)}>{gewaehlt.test ? 'Zu Trainingsdaten' : 'Zu Testdaten'}</button>
               <button onclick={() => loeschen(gewaehlt.id)}>Löschen</button>
@@ -208,15 +253,59 @@
             <div class="tabellenbox"><DatenTabelle {i} {auswahl} onAuswahl={(id) => (auswahl = id)} onAendern={onGeaendert} /></div>
           {/if}
         {:else if offen.id === 'modell'}
-          <p>Das <Begriff id="modell" /> ist eine Gerade. Beim Training sucht die App die Gerade, die am besten zu den <Begriff id="trainingsdaten" /> passt.</p>
-          {#if stufe >= 3}
-            <p class="formel">{ZIEL} = <span class="w">{zahl(gerade.steigung, 2)}</span> · {MERKMAL} {mitVorzeichen(gerade.achsenabschnitt, 1)}</p>
-            <p class="klein leise">Steigung {zahl(gerade.steigung, 2)}: Pro {i.merkmale[0].einheit} mehr steigt die Vorhersage um {zahl(gerade.steigung, 2)} {einheitWort}. Achsenabschnitt {zahl(gerade.achsenabschnitt, 1)}: der Wert der Geraden bei 0 {i.merkmale[0].einheit}.</p>
+          {#if art === 'netz'}
+            <p>Das <Begriff id="modell" /> ist ein kleines <Begriff id="netz" />. Seine <Begriff id="neuron" text="Neuronen" /> biegen die Linie, so kann es auch Kurven lernen.</p>
+          {:else if art === 'skurve'}
+            <p>Das <Begriff id="modell" /> ist eine <Begriff id="skurve" />. Sie zeigt für jeden Wert, wie <Begriff id="wahrscheinlichkeit" text="wahrscheinlich" /> „{klassen[1]}“ ist; ab 50 % sagt es „{klassen[1]}“.</p>
+          {:else if klasse}
+            <p>Das <Begriff id="modell" /> ist eine Gerade. Wo sie über 50 % liegt, sagt es „{klassen[1]}“, sonst „{klassen[0]}“.</p>
+          {:else}
+            <p>Das <Begriff id="modell" /> ist eine Gerade. Beim Training sucht die App die Gerade, die am besten zu den <Begriff id="trainingsdaten" /> passt.</p>
           {/if}
-          {#if stufe >= 2}<p class="klein leise">S-Kurve und Netz zum Auswählen kommen mit der nächsten Version.</p>{/if}
+          {#if stufe >= 2}
+            <div class="wahl" role="group" aria-label="Modell wählen">
+              <button aria-pressed={art === 'gerade'} onclick={() => neuesModell('gerade')} use:erklaert={'Eine gerade Linie. Sie passt, wenn die Punkte ungefähr auf einer Linie liegen.'}>Gerade</button>
+              <button aria-pressed={art === 'skurve'} disabled={!klasse} onclick={() => neuesModell('skurve')} use:erklaert={'Eine S-förmige Kurve zwischen 0 und 100 %. Sie sagt Klassen wie ja oder nein mit Wahrscheinlichkeit voraus.'}>S-Kurve</button>
+              <button aria-pressed={art === 'netz'} onclick={() => neuesModell('netz')} use:erklaert={'Ein kleines Netz mit Zwischenschicht. Es kann auch gebogene Zusammenhänge lernen.'}>Netz</button>
+            </div>
+            {#if !klasse}<p class="klein leise">Die S-Kurve sagt Klassen wie ja oder nein voraus, keine Zahlen.</p>{/if}
+            {#if netz}
+              <div class="zeile neuronen">
+                <label for="neuronen"><Begriff id="neuron" text="Neuronen" /> in der Zwischenschicht</label>
+                <input id="neuronen" type="range" min="1" max={NEURONEN_HOECHSTENS} step="1" value={netz.w2.length} oninput={(e) => neuesModell('netz', Number(e.currentTarget.value))} use:erklaert={'Mehr Neuronen machen das Netz biegsamer. Zu viele können sich auch an Zufälle in den Daten anpassen.'} />
+                <strong class="zahl">{netz.w2.length}</strong>
+              </div>
+              <NetzBild {netz} eingabe={MERKMAL} ausgabe={ZIEL} />
+            {/if}
+            <p class="klein leise">Ein neu gewähltes Modell hat noch nichts gelernt. Trainiert es danach.</p>
+          {/if}
+          {#if stufe >= 3}
+            {#if art === 'gerade'}
+              <p class="formel">{ZIEL} = <span class="w">{zahl(gerade.steigung, klasse ? 3 : 2)}</span> · {MERKMAL} {mitVorzeichen(gerade.achsenabschnitt, klasse ? 2 : 1)}</p>
+              {#if klasse}
+                <p class="klein leise">Steigung {zahl(gerade.steigung, 3)}: Pro {i.merkmale[0].einheit} mehr steigt der Wert um {zahl(gerade.steigung * 100, 1)} Prozentpunkte. {#if grenzen.length}Bei 0,5 liegt die <Begriff id="klassengrenze" text="Grenze" />: {zahl(grenzen[0], 1)} {i.merkmale[0].einheit}.{/if}</p>
+              {:else}
+                <p class="klein leise">Steigung {zahl(gerade.steigung, 2)}: Pro {i.merkmale[0].einheit} mehr steigt die Vorhersage um {zahl(gerade.steigung, 2)} {einheitWort}. Achsenabschnitt {zahl(gerade.achsenabschnitt, 1)}: der Wert der Geraden bei 0 {i.merkmale[0].einheit}.</p>
+              {/if}
+            {:else if art === 'skurve'}
+              <p class="formel">p({klassen[1]}) = <span class="bruch">1 / (1 + e<sup>−z</sup>)</span>, z = <span class="w">{zahl(gerade.steigung, 3)}</span> · {MERKMAL} {mitVorzeichen(gerade.achsenabschnitt, 2)}</p>
+              <p class="klein leise">Bei z = 0 ist p = 50 %: Dort liegt die <Begriff id="klassengrenze" text="Grenze" />{#if grenzen.length}, bei {zahl(grenzen[0], 1)} {i.merkmale[0].einheit}{/if}. Je größer die Steigung, desto steiler die S-Kurve.</p>
+            {:else if netz}
+              <p class="formel">h<sub>j</sub> = tanh(w<sub>j</sub> · x + b<sub>j</sub>), &nbsp;ŷ = {klasse ? 'σ(' : ''}Σ v<sub>j</sub> · h<sub>j</sub> + c{klasse ? ')' : ''}</p>
+              <table class="gewichte">
+                <thead><tr><th>Neuron</th><th>w</th><th>b</th><th>v</th></tr></thead>
+                <tbody>
+                  {#each netz.w1 as w, j}
+                    <tr><td>{j + 1}</td><td>{zahl(w[0], 2)}</td><td>{zahl(netz.b1[j], 2)}</td><td>{zahl(netz.w2[j], 2)}</td></tr>
+                  {/each}
+                </tbody>
+              </table>
+              <p class="klein leise">c = {zahl(netz.b2, 3)}. Alle Werte sind <Begriff id="normiert" /> gerechnet.</p>
+            {/if}
+          {/if}
         {:else if offen.id === 'training'}
           <div class="zeile">
-            <button onclick={einLernschritt} disabled={!anzahlTraining} use:erklaert={'Macht genau einen Lernschritt: Die Gerade rückt ein Stück näher an die Punkte.'}>Ein Lernschritt</button>
+            <button onclick={einLernschritt} disabled={!anzahlTraining} use:erklaert={'Macht genau einen Lernschritt: Das Modell rückt ein Stück näher an die Punkte.'}>Ein Lernschritt</button>
             <button onclick={vonVorn} use:erklaert={'Setzt das Modell zurück, als hätte es noch nichts gelernt.'}>Von vorn</button>
             <span class="raum"></span>
             <span class="klein leise">Lernschritte: <strong class="zahl">{i.schritte}</strong></span>
@@ -227,20 +316,28 @@
               <input id="lernrate" type="range" min="0.05" max="1" step="0.05" value={i.lernrate} oninput={(e) => lernrateSetzen(Number(e.currentTarget.value))} use:erklaert={'Stellt ein, wie groß jeder Lernschritt ist. Zu klein dauert lange, zu groß lässt das Modell springen.'} />
               <strong class="zahl">{zahl(i.lernrate, 2)}</strong>
             </div>
-            <p class="klein leise">Beim <Begriff id="gradientenabstieg" /> rückt die Gerade bei jedem Schritt ein Stück in die Richtung, in der die <Begriff id="kostenfunktion" /> am stärksten sinkt. Die Lernrate bestimmt, wie groß dieser Schritt ist.</p>
+            <p class="klein leise">Beim <Begriff id="gradientenabstieg" /> rückt das Modell bei jedem Schritt ein Stück in die Richtung, in der die <Begriff id="kostenfunktion" /> am stärksten sinkt. Die Lernrate bestimmt, wie groß dieser Schritt ist.</p>
           {:else}
             <p class="klein leise">Die gestrichelten Linien zeigen, wie weit jeder Punkt vom Modell entfernt ist. Beim Training werden sie kürzer.</p>
           {/if}
           {#if stufe >= 3}
             <div class="rechenweg">
               <div class="label">Rechenweg, <Begriff id="normiert" /> gerechnet</div>
-              <p>ŷ = w · x + b &nbsp;·&nbsp; K = <span class="bruch">1/n</span> Σ (ŷ − y)² = <strong>{zahl(kostenJetzt, 4)}</strong></p>
-              {#if letzter}
-                <p>w: {zahl(letzter.vorher.w[0], 3)} − {zahl(lernrate, 2)} · {klammer(letzter.gradW[0])} = <strong>{zahl(letzter.nachher.w[0], 3)}</strong></p>
-                <p>b: {zahl(letzter.vorher.b, 3)} − {zahl(lernrate, 2)} · {klammer(letzter.gradB)} = <strong>{zahl(letzter.nachher.b, 3)}</strong></p>
+              <p>
+                {art === 'gerade' ? 'ŷ = w · x + b' : art === 'skurve' ? 'ŷ = σ(w · x + b)' : 'ŷ = Netz(x)'} &nbsp;·&nbsp; K =
+                {#if ce}−<span class="bruch">1/n</span> Σ [y · ln ŷ + (1 − y) · ln(1 − ŷ)]{:else}<span class="bruch">1/n</span> Σ (ŷ − y)²{/if}
+                = <strong>{zahl(kostenJetzt, 4)}</strong>
+              </p>
+              {#if letzter && letzter.grad.art !== 'netz' && letzter.vorher.art !== 'netz' && letzter.nachher.art !== 'netz'}
+                <p>w: {zahl(letzter.vorher.w[0], 3)} − {zahl(letzter.lernrate, 2)} · {klammer(letzter.grad.w[0])} = <strong>{zahl(letzter.nachher.w[0], 3)}</strong></p>
+                <p>b: {zahl(letzter.vorher.b, 3)} − {zahl(letzter.lernrate, 2)} · {klammer(letzter.grad.b)} = <strong>{zahl(letzter.nachher.b, 3)}</strong></p>
                 <p class="klein leise">Neues Gewicht = altes Gewicht − Lernrate · Steigung der Kosten (Gradient). Die Kosten sanken von {zahl(letzter.kostenVorher, 4)} auf {zahl(letzter.kostenNachher, 4)}.</p>
+              {:else if letzter && letzter.grad.art === 'netz' && letzter.vorher.art === 'netz' && letzter.nachher.art === 'netz'}
+                <p>v₁: {zahl(letzter.vorher.w2[0], 3)} − {zahl(letzter.lernrate, 3)} · {klammer(letzter.grad.w2[0])} = <strong>{zahl(letzter.nachher.w2[0], 3)}</strong></p>
+                <p>w₁: {zahl(letzter.vorher.w1[0][0], 3)} − {zahl(letzter.lernrate, 3)} · {klammer(letzter.grad.w1[0][0])} = <strong>{zahl(letzter.nachher.w1[0][0], 3)}</strong></p>
+                <p class="klein leise">So ändert die App alle {letzter.vorher.w2.length * 3 + 1} Gewichte. Die Steigungen rechnet sie von der Ausgabe rückwärts zu den Neuronen aus (Backpropagation). Beim Netz teilt sie die Lernrate: 2 · {zahl(lernrate, 2)} / ({letzter.vorher.w2.length} + 1) = {zahl(letzter.lernrate, 3)}. Die Kosten sanken von {zahl(letzter.kostenVorher, 4)} auf {zahl(letzter.kostenNachher, 4)}.</p>
               {:else}
-                <p class="klein leise">Macht einen Lernschritt, dann steht hier, wie w und b neu berechnet werden.</p>
+                <p class="klein leise">Macht einen Lernschritt, dann steht hier, wie die Gewichte neu berechnet werden.</p>
               {/if}
             </div>
           {/if}
@@ -249,12 +346,21 @@
             <label for="frage">{i.merkmale[0].name}</label>
             <input id="frage" inputmode="decimal" placeholder="z. B. {zahl((i.merkmale[0].min + i.merkmale[0].max) / 2 + 3, 0)}" value={i.frage ? zahl(i.frage[0], i.merkmale[0].stellen, false) : ''} onchange={(e) => frageEingabe(e.currentTarget.value)} />
             <span class="leise">{i.merkmale[0].einheit} ›</span>
-            {#if frageWert !== null}<strong class="antwort">etwa {zahl(frageWert, i.ziel.stellen)} {einheitWort}</strong>{/if}
+            {#if klasse && frageJa !== null}
+              {@const ja = frageJa >= 0.5}
+              <strong class="antwort">{klassen[ja ? 1 : 0]}</strong>
+              <span><Begriff id="wahrscheinlichkeit" />: {zahl((ja ? frageJa : 1 - frageJa) * 100)} %</span>
+            {:else if frageWert !== null}<strong class="antwort">etwa {zahl(frageWert, i.ziel.stellen)} {einheitWort}</strong>{/if}
           </div>
+          {#if klasse && art === 'gerade' && frageWert !== null && stufe >= 2 && (frageWert > 1 || frageWert < 0)}
+            <p class="klein leise">Die Gerade liefert hier {zahl(frageWert * 100)} %. Eine Wahrscheinlichkeit liegt aber immer zwischen 0 und 100 %; die S-Kurve passt deshalb besser.</p>
+          {/if}
           {#if !i.frage}<p class="klein leise">Gebt einen Wert ein oder tippt ins Diagramm.</p>{/if}
           {#if i.schritte === 0}
             <p class="klein leise">Das Modell hat noch nicht gelernt. Trainiert es zuerst, sonst rät es nur.</p>
-          {:else if fehlerTest !== null}
+          {:else if falschTest && falschTest.von}
+            <p class="klein leise"><Begriff id="testdaten" text="Testdaten" /> zeigen, ob das Modell auch bei Fällen stimmt, die es nicht gelernt hat: Von {falschTest.von} ordnet es {falschTest.von - falschTest.falsch} richtig ein.</p>
+          {:else if fehlerTest !== null && !klasse}
             <p class="klein leise"><Begriff id="testdaten" text="Testdaten" /> zeigen, ob das Modell auch bei Fällen stimmt, die es nicht gelernt hat: Dort liegt es im Mittel {zahl(fehlerTest, 1)} {einheitWort} daneben.</p>
           {/if}
         {:else}
@@ -280,6 +386,8 @@
   .legende span { display: inline-flex; align-items: center; gap: 6px; }
   .legende i { display: inline-block; }
   .kreis { width: 11px; height: 11px; border: 2px solid var(--schrift); border-radius: 50%; }
+  .kreis.voll { background: var(--schrift); }
+  .schraffur { width: 16px; height: 12px; border: 1px solid var(--modell); background: repeating-linear-gradient(45deg, var(--modell-hell) 0 3px, #b9cfee 3px 4.5px); }
   .quadrat { width: 11px; height: 11px; border: 2px solid var(--frage); }
   .strich { width: 16px; height: 3px; background: var(--modell); border-radius: 2px; }
   .raute { width: 9px; height: 9px; background: var(--frage); transform: rotate(45deg); }
@@ -299,4 +407,12 @@
   .formel .w { color: var(--modell); }
   .rechenweg { display: flex; flex-direction: column; gap: 4px; padding: 10px 12px; border: 1px solid var(--linie); border-radius: var(--radius-knopf); background: var(--hintergrund); font-variant-numeric: tabular-nums; font-size: 14px; }
   .bruch { font-size: 12px; }
+  .formel .bruch { font-size: inherit; }
+  .wahl { display: flex; gap: 8px; }
+  .wahl button { flex: 1; }
+  .wahl button[aria-pressed='true'] { background: var(--modell); border-color: var(--modell); color: #fff; }
+  .neuronen input { flex: 1; min-width: 120px; accent-color: var(--modell); min-height: 36px; }
+  .gewichte { border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
+  .gewichte th, .gewichte td { padding: 2px 10px 2px 0; text-align: right; }
+  .gewichte th { color: var(--schrift2); font-weight: 600; }
 </style>

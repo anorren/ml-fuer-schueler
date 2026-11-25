@@ -3,7 +3,15 @@
   import { zahl } from './rechnen';
 
   // Fehler oben rechts mit Verlaufskurve (FR-16): sinkt er, zeigt ein grüner Pfeil nach unten.
-  let { wert, verlauf, einheit }: { wert: number | null; verlauf: number[]; einheit: string } = $props();
+  // Bei Klassen steht der Fehler in Prozent direkt hinter der Zahl, darunter wie viele Beispiele falsch eingeordnet sind.
+  interface Props {
+    wert: number | null;
+    verlauf: number[];
+    einheit: string;
+    prozent?: boolean;
+    zusatz?: string | null;
+  }
+  let { wert, verlauf, einheit, prozent = false, zusatz = null }: Props = $props();
   const B = 110, H = 34;
   const pfad = $derived.by(() => {
     if (verlauf.length < 2) return '';
@@ -21,10 +29,11 @@
   <div>
     <div class="label"><Begriff id="fehler" /></div>
     <div class="wert">
-      {wert === null ? '–' : zahl(wert, 1)}
+      {wert === null ? '–' : prozent ? `${zahl(wert, 0)} %` : zahl(wert, 1)}
       {#if richtung < 0}<span class="status-gut" aria-label="sinkt">↓</span>{:else if richtung > 0}<span class="status-achtung" aria-label="steigt">↑</span>{/if}
     </div>
-    <div class="klein leise">{einheit} daneben im Mittel</div>
+    <div class="klein leise">{prozent ? 'daneben im Mittel' : `${einheit} daneben im Mittel`}</div>
+    {#if zusatz}<div class="klein leise">{zusatz}</div>{/if}
   </div>
   {#if pfad}
     <svg width={B} height={H} aria-hidden="true"><polyline points={pfad} /></svg>

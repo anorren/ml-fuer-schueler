@@ -28,7 +28,7 @@
 
 <header class="leiste">
   <button class="app" onclick={onStart} aria-label="Zur Startseite" use:erklaert={BEDIENUNG.start}>{titel ? 'ML für Schüler' : 'Machine Learning für Schüler'}</button>
-  {#if titel}<span class="leise titel">› {titel}</span>{/if}
+  {#if titel}<span class="leise titel" title={titel}>› {titel}</span>{/if}
   {#if team !== undefined}
     <input
       class="team"
@@ -70,8 +70,10 @@
 <style>
   .leiste { display: flex; align-items: center; gap: 10px; padding: 8px 16px; background: var(--flaeche); border-bottom: 1px solid var(--linie); flex-wrap: wrap; }
   .app { border: 0; padding: 0; font-weight: 700; font-size: 16px; background: none; min-height: var(--tippflaeche); }
-  .titel { text-transform: none; }
-  .team { font: inherit; font-size: 14px; min-height: 36px; width: 170px; padding: 0 10px; border: 1px solid var(--linie); border-radius: var(--radius-knopf); background: var(--hintergrund); color: var(--schrift); }
+  /* Der Szenariotitel nimmt den freien Platz und kürzt sich mit „…“, statt die Leiste umbrechen zu lassen. */
+  .titel { text-transform: none; flex: 1 1 0; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .titel + .team, .titel ~ .raum { flex: none; }
+  .team { font: inherit; font-size: 14px; min-height: 36px; width: 160px; padding: 0 10px; border: 1px solid var(--linie); border-radius: var(--radius-knopf); background: var(--hintergrund); color: var(--schrift); }
   .team:focus { outline: 3px solid var(--modell); outline-offset: 1px; background: var(--flaeche); }
   .raum { flex: 1; }
   .stufen { display: flex; border: 1px solid var(--linie); border-radius: var(--radius-knopf); overflow: hidden; }

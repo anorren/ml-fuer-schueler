@@ -68,7 +68,7 @@
     </button>
   </div>
 
-  <p class="klein leise hinweis">Fertig ist der Schulkiosk, die übrigen Beispiele folgen. <button class="verweis" onclick={onMachbarkeit}>Machbarkeitstest öffnen</button></p>
+  <p class="klein leise hinweis">Fertig sind Schulkiosk, Hitzefrei und Fahrrad-Bremsweg; Torschuss und Bias folgen. <button class="verweis" onclick={onMachbarkeit}>Machbarkeitstest öffnen</button></p>
 </section>
 
 <style>

@@ -1,15 +1,16 @@
 // Vorbereitete Szenarien (FR-10). Alle Daten sind erfunden und so gekennzeichnet.
-import type { TabellenInhalt, Zeile } from './typen';
-
-import { LERNRATE_STANDARD as LERNRATE } from './rechnen';
+import type { ModellArt, TabellenInhalt, Zeile } from './typen';
+import { LERNRATE_STANDARD as LERNRATE, modellNeu } from './rechnen';
 
 function zeilen(train: [number, number][], test: [number, number][] = []): Zeile[] {
   return [...train.map(([x, y]) => ({ x: [x], y, test: false })), ...test.map(([x, y]) => ({ x: [x], y, test: true }))].map((z, k) => ({ ...z, id: k + 1 }));
 }
 
-function grundinhalt(teil: Pick<TabellenInhalt, 'art' | 'merkmale' | 'ziel' | 'zeilen' | 'erfunden'>): TabellenInhalt {
-  return { version: 1, ...teil, modell: { art: 'gerade', w: teil.merkmale.map(() => 0), b: 0 }, lernrate: LERNRATE, schritte: 0, verlauf: [], frage: null, naechsteId: teil.zeilen.length + 1 };
+function grundinhalt(teil: Pick<TabellenInhalt, 'art' | 'merkmale' | 'ziel' | 'zeilen' | 'erfunden'>, modell: ModellArt = 'gerade'): TabellenInhalt {
+  return { version: 1, ...teil, modell: modellNeu(modell, teil.merkmale.length), lernrate: LERNRATE, schritte: 0, verlauf: [], frage: null, naechsteId: teil.zeilen.length + 1 };
 }
+
+const KLASSEN: [string, string] = ['nein', 'ja'];
 
 const VORLAGEN: Record<string, () => TabellenInhalt> = {
   schulkiosk: () =>
@@ -21,6 +22,33 @@ const VORLAGEN: Record<string, () => TabellenInhalt> = {
       zeilen: zeilen(
         [[14, 26], [16, 35], [18, 41], [19, 48], [21, 52], [23, 63], [24, 65], [26, 74], [27, 80], [29, 85], [31, 96], [32, 98]],
         [[20, 55], [25, 66]]
+      )
+    }),
+  // Klasse mit Wahrscheinlichkeit (FR-14); eine Ausreißer-Hitze verschiebt die Grenze der Geraden, kaum die der S-Kurve (FR-15).
+  hitzefrei: () =>
+    grundinhalt(
+      {
+        art: 'klasse',
+        erfunden: true,
+        merkmale: [{ name: 'Höchsttemperatur', einheit: '°C', min: 10, max: 40, stellen: 0 }],
+        ziel: { name: 'Hitzefrei', einheit: 'ja oder nein', min: 0, max: 1, stellen: 0, klassen: KLASSEN },
+        zeilen: zeilen(
+          [[14, 0], [16, 0], [18, 0], [20, 0], [22, 0], [23, 0], [24, 0], [25, 0], [26, 0], [28, 0], [27, 1], [29, 1], [30, 1], [31, 1], [33, 1]],
+          [[21, 0], [32, 1]]
+        )
+      },
+      'skurve'
+    ),
+  // Gekrümmter Zusammenhang (Z-03b): Die Gerade passt schlecht, das Netz mit Zwischenschicht gut (FR-15).
+  bremsweg: () =>
+    grundinhalt({
+      art: 'zahl',
+      erfunden: true,
+      merkmale: [{ name: 'Geschwindigkeit', einheit: 'km/h', min: 0, max: 40, stellen: 0 }],
+      ziel: { name: 'Bremsweg', einheit: 'm', min: 0, max: 20, stellen: 1 },
+      zeilen: zeilen(
+        [[5, 0.4], [8, 0.7], [10, 1.0], [12, 1.5], [15, 2.1], [18, 3.2], [20, 3.8], [22, 4.8], [25, 5.9], [27, 7.2], [30, 8.6], [32, 10.1], [35, 11.7], [38, 14.1], [40, 15.3]],
+        [[17, 2.9], [28, 7.5]]
       )
     })
 };
@@ -50,10 +78,20 @@ export function istInhalt(roh: unknown): roh is TabellenInhalt {
     !!i.ziel &&
     Array.isArray(i.zeilen) &&
     i.zeilen.every((z) => Array.isArray(z?.x) && z.x.length === i.merkmale!.length && z.x.every(Number.isFinite) && Number.isFinite(z.y)) &&
-    !!i.modell &&
-    Array.isArray(i.modell.w) &&
-    Number.isFinite(i.modell.b)
+    (i.art === 'zahl' || i.art === 'klasse') &&
+    modellGueltig(i.modell, i.merkmale.length)
   );
+}
+
+const zahlen = (a: unknown, n?: number) => Array.isArray(a) && (n === undefined || a.length === n) && a.every(Number.isFinite);
+
+function modellGueltig(m: unknown, merkmale: number): boolean {
+  const o = m as Record<string, unknown> | null;
+  if (!o) return false;
+  if (o.art === 'gerade' || o.art === 'skurve') return zahlen(o.w, merkmale) && Number.isFinite(o.b);
+  if (o.art !== 'netz' || !Array.isArray(o.w1) || !o.w1.length) return false;
+  const h = o.w1.length;
+  return o.w1.every((w) => zahlen(w, merkmale)) && zahlen(o.b1, h) && zahlen(o.w2, h) && Number.isFinite(o.b2);
 }
 
 /** Liefert einen gültigen Inhalt: den gespeicherten, sonst die Vorlage des Szenarios; {} für Szenarien ohne Daten. */
