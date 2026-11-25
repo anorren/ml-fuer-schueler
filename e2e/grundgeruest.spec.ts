@@ -3,7 +3,7 @@ import { expect, test } from '@playwright/test';
 test('Start ohne Anmeldung zeigt Galerie, Stufen und Module (FR-01, FR-02)', async ({ page }) => {
   await page.goto('./');
   await expect(page.getByRole('heading', { name: 'Neues Projekt' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Lernen aus Tabellen' })).toBeVisible();
+  await expect(page.getByRole('tab', { name: /Lernen aus Tabellen/ })).toHaveAttribute('aria-selected', 'true');
   await expect(page.getByRole('radio', { name: '1' })).toHaveAttribute('aria-checked', 'true');
   await expect(page.getByText('Herausgegeben von Andreas Norren')).toBeVisible();
 });
@@ -12,9 +12,9 @@ test('Stufe wechseln und Arbeitsansicht mit Leiste (FR-03, BK-C)', async ({ page
   await page.goto('./');
   await page.getByRole('button', { name: /Schulkiosk/ }).click();
   await expect(page.getByRole('navigation', { name: 'Werkzeuge' })).toBeVisible();
-  await expect(page.getByRole('button', { name: '3D' })).toBeDisabled();
+  await expect(page.getByRole('button', { name: '3D' })).toHaveCount(0);
   await page.getByRole('radio', { name: '2' }).click();
-  await expect(page.getByRole('button', { name: '3D' })).toBeEnabled();
+  await expect(page.getByRole('button', { name: '3D' })).toBeVisible();
 });
 
 test('Letzter Stand bleibt nach Neuladen erhalten (FR-06) und Neu beginnen fragt nach (FR-07)', async ({ page }) => {

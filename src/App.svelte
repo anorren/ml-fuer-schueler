@@ -1,11 +1,17 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import { registerSW } from 'virtual:pwa-register';
   import Kopfleiste from './komponenten/Kopfleiste.svelte';
   import Galerie from './komponenten/Galerie.svelte';
   import Arbeitsansicht from './komponenten/Arbeitsansicht.svelte';
   import Machbarkeit from './komponenten/Machbarkeit.svelte';
-  import { ausDateiLesen, neuesProjekt, ProjektFehler, speichernAlsDatei, type Projekt, type Stufe } from './lib/projekt';
+  import Blase from './hilfe/Blase.svelte';
+  import { hilfeEinrichten } from './hilfe/hilfe.svelte';
+  import { aktuellerTipp, RAHMEN_REGELN } from './hilfe/tipps';
+  import { ausDateiLesen, neuesProjekt, ProjektFehler, speichernAlsDatei, type ModulId, type Projekt, type Stufe } from './lib/projekt';
+  import { modul as modulNach, szenarioTitel } from './lib/module';
   import * as zwischen from './lib/zwischenspeicher';
+  import * as einstellungen from './lib/einstellungen';
 
   const APP_VERSION = __APP_VERSION__;
 
@@ -13,13 +19,20 @@
   let ansicht = $state<Ansicht>('galerie');
   const startstand = zwischen.laden();
   let projekt = $state<Projekt | null>(startstand);
-  let stufe = $state<Stufe>(startstand?.stufe ?? 1);
+  let stufe = $state<Stufe>(startstand?.stufe ?? einstellungen.stufeLaden() ?? 1);
+  let modulId = $state<ModulId>(startstand?.modul ?? 'tabellen');
+  const modul = $derived(modulNach(projekt?.modul ?? modulId));
   let gesichert = $state(true);
+  let ungesichertSeit = $state<number | null>(null);
+  let jetzt = $state(Date.now());
+  let weggetippt = $state(new Set<string>());
   let meldung = $state<{ text: string; art: 'gut' | 'achtung' | 'info' } | null>(null);
   let updateBereit = $state(false);
   let offlineBereit = $state(false);
   let online = $state(navigator.onLine);
   let dateiwahl: HTMLInputElement;
+
+  const tipp = $derived(aktuellerTipp([...RAHMEN_REGELN, ...modul.regeln], { ungesichertSeit, jetzt }, weggetippt));
 
   const aktualisieren = registerSW({
     onNeedRefresh: () => (updateBereit = true),
@@ -31,9 +44,23 @@
   // Projekte auch bei geteilten Geräten möglichst lange halten (Safari kann sonst Daten löschen)
   navigator.storage?.persist?.().catch(() => {});
 
+  onMount(() => {
+    const aufraeumen = hilfeEinrichten();
+    const uhr = setInterval(() => (jetzt = Date.now()), 30_000);
+    return () => {
+      aufraeumen();
+      clearInterval(uhr);
+    };
+  });
+
   function melden(text: string, art: 'gut' | 'achtung' | 'info' = 'info') {
     meldung = { text, art };
     setTimeout(() => (meldung = null), 4500);
+  }
+
+  function alsGesichert() {
+    gesichert = true;
+    ungesichertSeit = null;
   }
 
   function geaendert() {
@@ -41,26 +68,34 @@
     projekt.stufe = stufe;
     zwischen.merken(projekt);
     gesichert = false;
+    ungesichertSeit ??= Date.now();
   }
 
   function stufeWechseln(s: Stufe) {
     stufe = s;
+    einstellungen.stufeMerken(s);
+    geaendert();
+  }
+
+  function teamAendern(name: string) {
+    if (!projekt) return;
+    projekt.team = name.trim().slice(0, 30);
     geaendert();
   }
 
   function starten(szenario: string | null) {
-    projekt = neuesProjekt(APP_VERSION, '', 'tabellen', stufe);
+    projekt = neuesProjekt(APP_VERSION, '', modulId, stufe);
     projekt.szenario = szenario;
     geaendert();
     ansicht = 'arbeit';
   }
 
   async function speichern() {
-    if (!projekt) projekt = neuesProjekt(APP_VERSION, '', 'tabellen', stufe);
+    if (!projekt) projekt = neuesProjekt(APP_VERSION, '', modulId, stufe);
     const r = await speichernAlsDatei(projekt);
     if (r === 'abgebrochen') return melden('Speichern abgebrochen. Das Projekt ist noch nicht gesichert.', 'achtung');
-    gesichert = true;
-    melden(r === 'geteilt' ? 'Projektdatei weitergegeben. Lege sie im Ordner eures Teams ab.' : 'Projektdatei gespeichert (Downloads).', 'gut');
+    alsGesichert();
+    melden(r === 'geteilt' ? 'Projektdatei weitergegeben. Legt sie im Ordner eures Teams ab.' : 'Projektdatei gespeichert (Downloads).', 'gut');
   }
 
   async function oeffnenGewaehlt(e: Event) {
@@ -70,8 +105,10 @@
     try {
       projekt = await ausDateiLesen(datei);
       stufe = projekt.stufe;
+      einstellungen.stufeMerken(stufe);
+      modulId = projekt.modul;
       zwischen.merken(projekt);
-      gesichert = true;
+      alsGesichert();
       ansicht = 'arbeit';
       melden('Projekt geöffnet.', 'gut');
     } catch (f) {
@@ -84,7 +121,10 @@
     zwischen.vergessen();
     projekt = null;
     stufe = 1;
-    gesichert = true;
+    einstellungen.stufeMerken(1);
+    modulId = 'tabellen';
+    weggetippt = new Set();
+    alsGesichert();
     ansicht = 'galerie';
   }
 </script>
@@ -93,7 +133,9 @@
   {stufe}
   {gesichert}
   {online}
-  titel={ansicht === 'arbeit' ? (projekt?.szenario ?? 'Leeres Projekt') : ansicht === 'machbarkeit' ? 'Machbarkeitstest' : ''}
+  titel={ansicht === 'arbeit' ? szenarioTitel(modul, projekt?.szenario ?? null) : ansicht === 'machbarkeit' ? 'Machbarkeitstest' : ''}
+  team={ansicht === 'arbeit' ? (projekt?.team ?? '') : undefined}
+  onTeam={teamAendern}
   onStufe={stufeWechseln}
   onOeffnen={() => dateiwahl.click()}
   onSpeichern={speichern}
@@ -105,18 +147,22 @@
 <main>
   {#if ansicht === 'galerie'}
     <Galerie
-      weiter={projekt ? { team: projekt.team, szenario: projekt.szenario } : null}
+      modul={modulId}
+      weiter={projekt ? { team: projekt.team, modul: projekt.modul, szenario: projekt.szenario } : null}
+      onModul={(id) => (modulId = id)}
       onStart={starten}
       onWeiter={() => (ansicht = 'arbeit')}
       onOeffnen={() => dateiwahl.click()}
       onMachbarkeit={() => (ansicht = 'machbarkeit')}
     />
   {:else if ansicht === 'arbeit'}
-    <Arbeitsansicht {stufe} />
+    <Arbeitsansicht {stufe} {modul} tipp={tipp?.text ?? null} onTippWeg={() => tipp && (weggetippt = new Set([...weggetippt, tipp.id]))} />
   {:else}
     <Machbarkeit {offlineBereit} {online} onSpeichern={speichern} onOeffnen={() => dateiwahl.click()} />
   {/if}
 </main>
+
+<Blase />
 
 {#if meldung}
   <div class="meldung karte" class:gut={meldung.art === 'gut'} class:achtung={meldung.art === 'achtung'} role="status">{meldung.text}</div>
