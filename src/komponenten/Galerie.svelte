@@ -68,7 +68,7 @@
     </button>
   </div>
 
-  <p class="klein leise hinweis">Fertig sind Schulkiosk, Hitzefrei, Fahrrad-Bremsweg und Torschuss; Bias folgt. <button class="verweis" onclick={onMachbarkeit}>Machbarkeitstest öffnen</button></p>
+  <p class="klein leise hinweis">Alle Beispiele sind erfundene Daten. <button class="verweis" onclick={onMachbarkeit}>Machbarkeitstest öffnen</button></p>
 </section>
 
 <style>

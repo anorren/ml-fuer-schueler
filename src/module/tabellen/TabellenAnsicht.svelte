@@ -25,6 +25,7 @@
     klassenbereiche,
     kosten,
     lesen,
+    ausserhalbDerDaten,
     LERNRATE_STANDARD,
     lernschritt,
     mitKreuzentropie,
@@ -102,7 +103,15 @@
   const MERKMAL = $derived(i.merkmale[0].name);
   const ZIEL = $derived(i.ziel.wort ?? i.ziel.name);
 
-  $effect(() => onWerte({ verlauf: [...i.verlauf] }));
+  $effect(() => onWerte({ verlauf: [...i.verlauf], ausserhalb: !!i.frage && i.schritte > 0 && ausserhalbDerDaten(i, i.frage) }));
+
+  /** Weitere Daten ergänzen, z. B. die Wintertage im Bias-Beispiel (FR-23). */
+  function nachschubHolen() {
+    if (!i.nachschub) return;
+    for (const z of i.nachschub.zeilen) i.zeilen.push({ ...z, x: [...z.x], id: i.naechsteId++ });
+    i.nachschub = undefined;
+    onGeaendert();
+  }
 
   function schritt(): boolean {
     const p = punkteNorm(i);
@@ -315,6 +324,12 @@
     <div class="schublade" class:rechts={ansicht3d}>
       <InfoKarte titel={offen.name} info={offen.info} frage={offen.id === 'vorhersage'} onSchliessen={() => (offenId = null)}>
         {#if offen.id === 'daten'}
+          {#if i.hinweis}<p class="szenario-hinweis">{i.hinweis}</p>{/if}
+          {#if i.nachschub}
+            <div class="zeile">
+              <button onclick={nachschubHolen} use:erklaert={'Fügt weitere Trainingsdaten hinzu. Danach trainiert ihr das Modell neu und vergleicht die Vorhersagen.'}>+ {i.nachschub.name} ergänzen ({i.nachschub.zeilen.length} Zeilen)</button>
+            </div>
+          {/if}
           {#if zwei}
             <div class="zeile">
               <span class="klein">Neue Punkte:</span>
@@ -492,6 +507,7 @@
 
 <style>
   /* Das Formular wächst mit seinem Inhalt; die Seite scrollt, statt den Knopf abzuschneiden. */
+  .szenario-hinweis { padding: 8px 12px; border-left: 4px solid var(--schrift2); background: var(--hintergrund); border-radius: var(--radius-knopf); }
   .einrichten { justify-content: center; align-items: flex-start; padding-bottom: 24px; height: auto; }
   .leinwand { position: relative; flex: none; padding: 12px 16px 96px; display: flex; gap: 12px; height: calc(100vh - 100px); min-height: 520px; }
   .diagramm { position: relative; flex: 1; min-width: 0; }

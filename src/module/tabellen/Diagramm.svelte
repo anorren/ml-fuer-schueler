@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { TabellenInhalt } from './typen';
-  import { achsenwerte, klassenbereiche, vorhersage, wahrscheinlichkeit, zahl } from './rechnen';
+  import { achsenwerte, klassenbereiche, luecken, vorhersage, wahrscheinlichkeit, zahl } from './rechnen';
 
   // XY-Ansicht als SVG (DEC-06, FR-20): benannte Achsen mit Einheit, Kreis = Trainingsdaten,
   // Quadrat = Testdaten, Raute = Vorhersage, blaue Linie = Modell. Punkte antippen, ziehen, setzen (FR-11).
@@ -48,6 +48,8 @@
   const bereiche = $derived(klasse ? klassenbereiche(i) : { ja: [], grenzen: [] });
   const frageY = $derived(i.frage ? (klasse ? wahrscheinlichkeit(i, i.frage) : vorhersage(i, i.frage)) : null);
   const musterId = `ja-${Math.random().toString(36).slice(2, 8)}`;
+  // Große Bereiche ohne Trainingsdaten grau markieren: Dort rät das Modell nur weiter (FR-23).
+  const ohneDaten = $derived(luecken(i));
   const clipId = `plot-${Math.random().toString(36).slice(2, 8)}`;
 
   let svg: SVGSVGElement;
@@ -137,6 +139,10 @@
       </pattern>
     </defs>
 
+    {#each ohneDaten as [a, b]}
+      <rect class="ohne" x={sx(a)} y={R.t} width={Math.max(sx(b) - sx(a), 0)} height={ph} />
+      <text class="ohne-text" x={(sx(a) + sx(b)) / 2} y={R.t + ph * 0.45} text-anchor="middle">keine Trainingsdaten</text>
+    {/each}
     {#each bereiche.ja as [a, b]}
       <rect class="ja-bereich" x={sx(a)} y={R.t} width={Math.max(sx(b) - sx(a), 0)} height={ph} fill="url(#{musterId})" />
     {/each}
@@ -218,6 +224,8 @@
   .ja-strich { stroke: var(--modell); stroke-width: 1.2; opacity: 0.35; }
   .grenze { stroke: var(--modell); stroke-width: 2; stroke-dasharray: 7 5; }
   .grenztext { font-size: 13px; font-weight: 600; fill: var(--modell-text, var(--modell)); }
+  .ohne { fill: var(--linie); opacity: 0.45; }
+  .ohne-text { font-size: 15px; font-weight: 600; fill: var(--schrift2); }
   .klassenname { font-size: 14px; font-weight: 700; fill: var(--schrift2); }
   .training.ja { fill: var(--schrift); }
   .test.ja { fill: var(--frage); }

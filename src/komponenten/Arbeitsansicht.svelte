@@ -32,7 +32,7 @@
     <div class="diagramm karte">
       {#if tipp}<Tipp text={tipp} onWeg={onTippWeg} />{/if}
       <p class="leise">Dieses Beispiel wird gerade gebaut.</p>
-      <p class="klein leise">Fertig sind schon Schulkiosk, Hitzefrei, Fahrrad-Bremsweg und Torschuss. Über die Startseite kommt ihr dorthin.</p>
+      <p class="klein leise">Über die Startseite kommt ihr zu den fertigen Beispielen.</p>
     </div>
     {#if offen}
       <div class="schublade">

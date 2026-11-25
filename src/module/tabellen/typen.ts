@@ -68,4 +68,8 @@ export interface TabellenInhalt {
   thema?: string;
   /** Projekt mit eigenem Thema statt eines vorbereiteten Szenarios. */
   eigen?: boolean;
+  /** Kurzer Hinweis zum Szenario in der Karte „Daten“, z. B. „nur Sommertage“ (FR-23). */
+  hinweis?: string;
+  /** Weitere Daten, die die Kinder bei Bedarf ergänzen, z. B. Wintertage im Bias-Beispiel (FR-23). */
+  nachschub?: { name: string; zeilen: Omit<Zeile, 'id'>[] };
 }

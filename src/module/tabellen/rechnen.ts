@@ -243,6 +243,32 @@ export function klassenbereiche(i: TabellenInhalt, proben = 240): { ja: [number,
   return { ja, grenzen };
 }
 
+/**
+ * Bereiche eines Merkmals ohne Trainingsdaten am Rand der Achse (FR-23): nur, wenn sie mindestens
+ * `anteil` der Achse ausmachen, damit kleine Ränder nicht ablenken.
+ */
+export function luecken(i: TabellenInhalt, k = 0, anteil = 0.25): [number, number][] {
+  const m = i.merkmale[k];
+  const xs = i.zeilen.filter((z) => !z.test).map((z) => z.x[k]);
+  if (!xs.length) return [];
+  const lo = Math.min(...xs), hi = Math.max(...xs), spanne = m.max - m.min;
+  const r: [number, number][] = [];
+  if (lo - m.min >= anteil * spanne) r.push([m.min, lo]);
+  if (m.max - hi >= anteil * spanne) r.push([hi, m.max]);
+  return r;
+}
+
+/** Liegt die Frage deutlich außerhalb der Trainingsdaten? Dann rät das Modell nur weiter (Tipp „ohne Daten“). */
+export function ausserhalbDerDaten(i: TabellenInhalt, x: number[], rand = 0.1): boolean {
+  const zeilen = i.zeilen.filter((z) => !z.test);
+  if (!zeilen.length) return false;
+  return x.some((v, k) => {
+    const xs = zeilen.map((z) => z.x[k]);
+    const spanne = i.merkmale[k].max - i.merkmale[k].min;
+    return v < Math.min(...xs) - rand * spanne || v > Math.max(...xs) + rand * spanne;
+  });
+}
+
 /** Training gilt als fertig, wenn sich der Fehler über zehn Schritte kaum noch ändert. */
 export function trainingFertig(verlauf: number[]): boolean {
   if (verlauf.length < 12) return false;

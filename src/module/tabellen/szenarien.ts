@@ -64,6 +64,25 @@ const VORLAGEN: Record<string, () => TabellenInhalt> = {
       },
       'skurve'
     ),
+  // Bias (FR-23, Z-05): Trainingsdaten nur aus dem Sommer. Für Wintertage sagt die Gerade unsinnige Werte voraus,
+  // bis die Kinder die Wintertage ergänzen und neu trainieren.
+  'bias-kiosk': () => ({
+    ...grundinhalt({
+      art: 'zahl',
+      erfunden: true,
+      merkmale: [{ name: 'Temperatur', einheit: '°C', min: -5, max: 35, stellen: 0 }],
+      ziel: { name: 'Verkaufte Eis', einheit: 'Stück pro Tag', wort: 'Eis', min: 0, max: 120, stellen: 0 },
+      zeilen: zeilen(
+        [[22, 52], [23, 57], [24, 60], [25, 66], [26, 68], [27, 74], [28, 77], [29, 83], [30, 86], [31, 92], [32, 94], [34, 101]],
+        [[3, 7], [6, 10]]
+      )
+    }),
+    hinweis: 'Diese Trainingsdaten stammen nur von Sommertagen. Die Testdaten sind Wintertage.',
+    nachschub: {
+      name: 'Wintertage',
+      zeilen: [[-3, 4], [-1, 5], [0, 6], [2, 6], [4, 8], [6, 9], [8, 12], [10, 15], [12, 19], [15, 26], [18, 36], [20, 44]].map(([x, y]) => ({ x: [x], y, test: false }))
+    }
+  }),
   // Gekrümmter Zusammenhang (Z-03b): Die Gerade passt schlecht, das Netz mit Zwischenschicht gut (FR-15).
   bremsweg: () =>
     grundinhalt({

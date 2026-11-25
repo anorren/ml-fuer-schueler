@@ -4,6 +4,7 @@ import { expect, test, type Page } from '@playwright/test';
 
 const zahlAus = (t: string) => Number(t.replace(/[^\d,]/g, '').replace(',', '.'));
 const fehlerWert = async (p: Page) => zahlAus(await p.locator('.fehler .wert').innerText());
+const imMittel = async (p: Page) => Number((await p.getByText(/Dort liegt es im Mittel/).textContent())!.match(/im Mittel ([\d,]+)/)![1].replace(',', '.'));
 const grenze = async (p: Page) => zahlAus((await p.locator('text.grenztext').first().textContent())!);
 
 async function oeffnen(p: Page, name: RegExp, achse: RegExp) {
@@ -163,4 +164,29 @@ test('3D-Ansicht ab Stufe 2: drehen, zoomen, zurücksetzen (FR-21)', async ({ pa
   await expect(leinwand).toHaveAttribute('data-zoom', '1.00');
   await page.getByRole('button', { name: '3D', exact: true }).click();
   await expect(page.getByRole('img', { name: /Draufsicht/ })).toBeVisible();
+});
+
+test('Bias im Kiosk: Sommerdaten liegen beim Wintertag daneben, Wintertage beheben es (FR-23)', async ({ page }) => {
+  await oeffnen(page, /Bias im Kiosk/, /Verkaufte Eis/);
+  await expect(page.getByText('keine Trainingsdaten')).toBeVisible();
+  await trainieren(page);
+  await page.getByRole('button', { name: 'Vorhersage', exact: true }).click();
+  await page.locator('#frage').fill('3');
+  await page.locator('#frage').press('Enter');
+  await expect(page.locator('.antwort')).toHaveText(/etwa −\d+ Eis/);
+  await expect(page.getByText('Für diesen Wert gibt es keine Trainingsdaten.', { exact: false })).toBeVisible();
+  const vorher = await imMittel(page);
+  expect(vorher).toBeGreaterThan(20);
+  await page.getByRole('button', { name: 'Tipp schließen' }).click();
+
+  await page.getByRole('button', { name: 'Daten', exact: true }).click();
+  await expect(page.getByText(/nur von Sommertagen/)).toBeVisible();
+  await page.getByRole('button', { name: /Wintertage ergänzen/ }).click();
+  await expect(page.locator('circle.training')).toHaveCount(24);
+  await expect(page.getByText('keine Trainingsdaten')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /Wintertage ergänzen/ })).toHaveCount(0);
+  await trainieren(page);
+  await page.getByRole('button', { name: 'Vorhersage', exact: true }).click();
+  await expect(page.locator('.antwort')).toHaveText(/etwa \d+ Eis/);
+  expect(await imMittel(page)).toBeLessThan(8);
 });

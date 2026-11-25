@@ -77,6 +77,12 @@ const tabellen: Modul = {
         const s = v.slice(-4);
         return s.every((w, k) => k === 0 || w > s[k - 1]);
       }
+    },
+    {
+      // Bias (FR-23): Fragen weit außerhalb der Trainingsdaten
+      id: 'ohne-daten',
+      text: 'Für diesen Wert gibt es keine Trainingsdaten. Das Modell schätzt hier nur weiter und kann weit danebenliegen.',
+      greift: (l) => l.werte?.ausserhalb === true
     }
   ],
   inhaltHerstellen: tabellenSzenarien.inhaltHerstellen,

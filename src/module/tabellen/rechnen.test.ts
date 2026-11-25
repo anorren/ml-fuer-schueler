@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { achsenwerte, falschEingeordnet, fehler, geradeEcht, hoehenlinie, klassenbereiche, linearEcht, raster, sigmoid, kosten, lernschritt, modellNeu, punkteNorm, lesen, trainingFertig, verlaufErgaenzen, vorhersage, wahrscheinlichkeit, zahl } from './rechnen';
+import { achsenwerte, ausserhalbDerDaten, luecken, falschEingeordnet, fehler, geradeEcht, hoehenlinie, klassenbereiche, linearEcht, raster, sigmoid, kosten, lernschritt, modellNeu, punkteNorm, lesen, trainingFertig, verlaufErgaenzen, vorhersage, wahrscheinlichkeit, zahl } from './rechnen';
 import { inhaltHerstellen, istInhalt, vorschau } from './szenarien';
 import type { Gerade, Modell, ModellArt, Netz, TabellenInhalt } from './typen';
 
@@ -236,7 +236,7 @@ describe('Darstellungshilfen und Szenarien', () => {
     expect(istInhalt(kaputt)).toBe(false);
     expect(inhaltHerstellen(kaputt, 'schulkiosk')).toMatchObject({ version: 1 });
     expect(inhaltHerstellen(null, 'Schulkiosk')).toMatchObject({ version: 1 });
-    expect(inhaltHerstellen(null, 'bias-kiosk')).toEqual({});
+    expect(inhaltHerstellen(null, 'unbekannt')).toEqual({});
     expect(istInhalt(szenario('torschuss', 'netz'))).toBe(true);
     expect(vorschau('torschuss')!.filter((p) => p.voll).length).toBe(13);
     expect(istInhalt(szenario('bremsweg', 'netz'))).toBe(true);
@@ -245,5 +245,30 @@ describe('Darstellungshilfen und Szenarien', () => {
     expect((inhaltHerstellen(null, null) as unknown as TabellenInhalt).zeilen).toEqual([]);
     expect(kiosk().erfunden).toBe(true);
     expect(vorschau('schulkiosk')!.every((p) => p.x >= 0 && p.x <= 1 && p.y >= 0 && p.y <= 1)).toBe(true);
+  });
+});
+
+describe('Bias im Kiosk (FR-23)', () => {
+  const bias = () => inhaltHerstellen(null, 'bias-kiosk') as unknown as TabellenInhalt;
+  const lernen = (i: TabellenInhalt, n: number) => {
+    const p = punkteNorm(i);
+    for (let k = 0; k < n; k++) i.modell = lernschritt(i.modell, p, 0.5).nachher;
+  };
+
+  it('mit Sommerdaten liegt die Vorhersage für einen Wintertag deutlich daneben, mit Winterdaten nicht mehr', () => {
+    const i = bias();
+    expect(i.hinweis).toMatch(/Sommertagen/);
+    lernen(i, 800);
+    expect(vorhersage(i, [3])).toBeLessThan(-15);
+    expect(fehler(i, true)!).toBeGreaterThan(20);
+    expect(luecken(i)).toEqual([[-5, 22]]);
+    expect(ausserhalbDerDaten(i, [3])).toBe(true);
+    expect(ausserhalbDerDaten(i, [28])).toBe(false);
+    i.zeilen.push(...i.nachschub!.zeilen.map((z, k) => ({ ...z, id: 100 + k })));
+    lernen(i, 800);
+    expect(fehler(i, true)!).toBeLessThan(8);
+    expect(vorhersage(i, [3])).toBeGreaterThan(0);
+    expect(Math.abs(vorhersage(i, [3]) - 7)).toBeLessThan(6);
+    expect(luecken(i)).toEqual([]);
   });
 });
