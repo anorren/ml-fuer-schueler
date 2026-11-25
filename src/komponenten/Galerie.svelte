@@ -46,8 +46,17 @@
 
   <div class="raster" role="tabpanel" aria-label={aktiv.name}>
     {#each aktiv.szenarien as s}
+      {@const punkte = aktiv.vorschau?.(s.id)}
       <button class="karte szenario" onclick={() => onStart(s.id)} title="Beispiel {s.titel} öffnen">
-        <span class="vorschau" aria-hidden="true"></span>
+        <span class="vorschau" aria-hidden="true">
+          {#if punkte}
+            <svg viewBox="0 0 100 50">
+              {#each punkte as p}
+                {#if p.test}<rect x={6 + p.x * 88 - 1.6} y={46 - p.y * 42 - 1.6} width="3.2" height="3.2" class="t" />{:else}<circle cx={6 + p.x * 88} cy={46 - p.y * 42} r="1.8" />{/if}
+              {/each}
+            </svg>
+          {:else}<span class="folgt klein">folgt</span>{/if}
+        </span>
         <span class="zeile"><strong>{s.titel}</strong><span class="marke">{s.art}</span></span>
         <span class="klein leise">{s.text}</span>
       </button>
@@ -59,7 +68,7 @@
     </button>
   </div>
 
-  <p class="klein leise hinweis">Die Beispiele werden gerade gebaut. <button class="verweis" onclick={onMachbarkeit}>Machbarkeitstest öffnen</button></p>
+  <p class="klein leise hinweis">Fertig ist der Schulkiosk, die übrigen Beispiele folgen. <button class="verweis" onclick={onMachbarkeit}>Machbarkeitstest öffnen</button></p>
 </section>
 
 <style>
@@ -75,7 +84,11 @@
   .lehrplan { font-size: 12px; opacity: 0.85; }
   .raster { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
   .szenario { display: flex; flex-direction: column; align-items: stretch; gap: 6px; padding: 14px; text-align: left; height: auto; white-space: normal; }
-  .vorschau { display: block; height: 110px; border: 1px solid var(--linie); border-radius: var(--radius-knopf); background: var(--hintergrund); }
+  .vorschau { display: flex; align-items: center; justify-content: center; overflow: hidden; height: 110px; border: 1px solid var(--linie); border-radius: var(--radius-knopf); background: var(--hintergrund); }
+  .vorschau svg { width: 100%; height: 100%; }
+  .vorschau circle { fill: var(--flaeche); stroke: var(--schrift); stroke-width: 0.8; vector-effect: non-scaling-stroke; }
+  .vorschau rect.t { fill: var(--flaeche); stroke: var(--frage); stroke-width: 1.2; vector-effect: non-scaling-stroke; }
+  .folgt { color: var(--schrift3); }
   .zeile { display: flex; justify-content: space-between; align-items: center; }
   .marke { font-size: 12px; padding: 2px 9px; border-radius: 20px; background: var(--modell-hell); }
   .leer { border-style: dashed; align-items: center; justify-content: center; }

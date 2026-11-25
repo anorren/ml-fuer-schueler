@@ -2,7 +2,7 @@
 
 Praxis-App zum Informatikunterricht der Sekundarstufe I: Schülerinnen und Schüler probieren maschinelles Lernen aus, ohne Konto, offline und auf älteren Klassen-iPads. Herausgegeben von **Andreas Norren** · [andreasnorren.de](https://andreasnorren.de) · [LinkedIn](https://www.linkedin.com/in/andreas-norren-644819414/)
 
-**Stand:** Etappe 1 (Rahmen): Galerie mit Modulen und Lehrplanbezug, Stufen, Teamname, Projektdatei, letzter Stand, Neu beginnen, Hilfemodus, „i“-Infobereiche, antippbare Begriffe und regelbasierte Tipps. Die Module folgen nacheinander: Lernen aus Tabellen, Bilder erkennen, Sprachmodell.
+**Stand:** Etappe 1 (Rahmen): Galerie mit Modulen und Lehrplanbezug, Stufen, Teamname, Projektdatei, letzter Stand, Neu beginnen, Hilfemodus, „i“-Infobereiche, antippbare Begriffe und regelbasierte Tipps. Etappe 2 begonnen: Schulkiosk mit Gerade, sichtbarem Training, Vorhersage, Testdaten und Tabelle. Die Module folgen nacheinander: Lernen aus Tabellen, Bilder erkennen, Sprachmodell.
 
 ## Technik
 

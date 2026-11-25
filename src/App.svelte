@@ -18,21 +18,29 @@
   type Ansicht = 'galerie' | 'arbeit' | 'machbarkeit';
   let ansicht = $state<Ansicht>('galerie');
   const startstand = zwischen.laden();
+  if (startstand) inhaltPruefen(startstand);
   let projekt = $state<Projekt | null>(startstand);
   let stufe = $state<Stufe>(startstand?.stufe ?? einstellungen.stufeLaden() ?? 1);
   let modulId = $state<ModulId>(startstand?.modul ?? 'tabellen');
   const modul = $derived(modulNach(projekt?.modul ?? modulId));
+
+  /** Bringt den Projektinhalt in eine gültige Form (alte Dateien, fehlende Daten). */
+  function inhaltPruefen(p: Projekt) {
+    const m = modulNach(p.modul);
+    if (m.inhaltHerstellen) p.inhalt = m.inhaltHerstellen(p.inhalt, p.szenario);
+  }
   let gesichert = $state(true);
   let ungesichertSeit = $state<number | null>(null);
   let jetzt = $state(Date.now());
   let weggetippt = $state(new Set<string>());
+  let werte = $state<Record<string, unknown>>({});
   let meldung = $state<{ text: string; art: 'gut' | 'achtung' | 'info' } | null>(null);
   let updateBereit = $state(false);
   let offlineBereit = $state(false);
   let online = $state(navigator.onLine);
   let dateiwahl: HTMLInputElement;
 
-  const tipp = $derived(aktuellerTipp([...RAHMEN_REGELN, ...modul.regeln], { ungesichertSeit, jetzt }, weggetippt));
+  const tipp = $derived(aktuellerTipp([...RAHMEN_REGELN, ...modul.regeln], { ungesichertSeit, jetzt, werte }, weggetippt));
 
   const aktualisieren = registerSW({
     onNeedRefresh: () => (updateBereit = true),
@@ -86,6 +94,8 @@
   function starten(szenario: string | null) {
     projekt = neuesProjekt(APP_VERSION, '', modulId, stufe);
     projekt.szenario = szenario;
+    inhaltPruefen(projekt);
+    werte = {};
     geaendert();
     ansicht = 'arbeit';
   }
@@ -103,7 +113,10 @@
     (e.currentTarget as HTMLInputElement).value = '';
     if (!datei) return;
     try {
-      projekt = await ausDateiLesen(datei);
+      const geladen = await ausDateiLesen(datei);
+      inhaltPruefen(geladen);
+      projekt = geladen;
+      werte = {};
       stufe = projekt.stufe;
       einstellungen.stufeMerken(stufe);
       modulId = projekt.modul;
@@ -156,7 +169,17 @@
       onMachbarkeit={() => (ansicht = 'machbarkeit')}
     />
   {:else if ansicht === 'arbeit'}
-    <Arbeitsansicht {stufe} {modul} tipp={tipp?.text ?? null} onTippWeg={() => tipp && (weggetippt = new Set([...weggetippt, tipp.id]))} />
+    {#if projekt}
+      <Arbeitsansicht
+        bind:inhalt={projekt.inhalt}
+        {stufe}
+        {modul}
+        tipp={tipp?.text ?? null}
+        onTippWeg={() => tipp && (weggetippt = new Set([...weggetippt, tipp.id]))}
+        onGeaendert={geaendert}
+        onWerte={(w) => (werte = w)}
+      />
+    {/if}
   {:else}
     <Machbarkeit {offlineBereit} {online} onSpeichern={speichern} onOeffnen={() => dateiwahl.click()} />
   {/if}
