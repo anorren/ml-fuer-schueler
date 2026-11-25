@@ -70,7 +70,7 @@ export function fehler(i: TabellenInhalt, test = false): number | null {
 /** Wie viele Beispiele das Modell der falschen Klasse zuordnet (Grenze bei 50 %). */
 export function falschEingeordnet(i: TabellenInhalt, test = false): { falsch: number; von: number } {
   const p = punkteNorm(i, test);
-  return { falsch: p.filter((q) => ausgabe(i.modell, q.x, true) >= 0.5 !== q.y >= 0.5).length, von: p.length };
+  return { falsch: p.filter((q) => ausgabe(i.modell, q.x, true) > 0.5 !== q.y >= 0.5).length, von: p.length };
 }
 
 export const NEURONEN_STANDARD = 4;
@@ -217,7 +217,8 @@ export function hoehenlinie(werte: number[][], stufe = 0.5): Strecke[] {
  */
 export function klassenbereiche(i: TabellenInhalt, proben = 240): { ja: [number, number][]; grenzen: number[] } {
   const m = i.merkmale[0];
-  const p = (x: number) => vorhersage(i, [x]) >= 0.5;
+  // Erst über 50 % gilt „ja“: Ein ungelerntes Modell (überall genau 50 %) hat noch keinen Bereich „ja“.
+  const p = (x: number) => vorhersage(i, [x]) > 0.5;
   const ja: [number, number][] = [];
   const grenzen: number[] = [];
   let start: number | null = p(m.min) ? m.min : null;

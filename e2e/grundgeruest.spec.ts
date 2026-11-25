@@ -14,7 +14,9 @@ test('Stufe wechseln und Arbeitsansicht mit Leiste (FR-03, BK-C)', async ({ page
   await expect(page.getByRole('navigation', { name: 'Werkzeuge' })).toBeVisible();
   await expect(page.getByRole('button', { name: '3D' })).toHaveCount(0);
   await page.getByRole('radio', { name: '2' }).click();
-  await expect(page.getByRole('button', { name: '3D' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Tabelle' })).toBeVisible();
+  // 3D nur bei zwei Eingaben (FR-21)
+  await expect(page.getByRole('button', { name: '3D' })).toHaveCount(0);
 });
 
 test('Letzter Stand bleibt nach Neuladen erhalten (FR-06) und Neu beginnen fragt nach (FR-07)', async ({ page }) => {

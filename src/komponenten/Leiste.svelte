@@ -7,10 +7,12 @@
   interface Props {
     eintraege: LeistenEintrag[];
     offen: LeistenEintrag['id'] | null;
+    /** Eingeschaltete Umschalter wie „3D“, die neben einer offenen Karte gelten. */
+    an?: LeistenEintrag['id'][];
     onWahl: (id: LeistenEintrag['id']) => void;
     children?: Snippet;
   }
-  let { eintraege, offen, onWahl, children }: Props = $props();
+  let { eintraege, offen, an = [], onWahl, children }: Props = $props();
 
   const hilfe: Record<LeistenEintrag['id'], string> = {
     daten: 'Öffnet die Karte mit den Daten.',
@@ -23,7 +25,7 @@
 
 <nav class="karte dock" aria-label="Werkzeuge">
   {#each eintraege as e (e.id)}
-    <button class:frage={e.id === 'vorhersage' && offen === e.id} aria-pressed={offen === e.id} onclick={() => onWahl(e.id)} use:erklaert={hilfe[e.id]}>{e.name}</button>
+    <button class:frage={e.id === 'vorhersage' && offen === e.id} aria-pressed={offen === e.id || an.includes(e.id)} onclick={() => onWahl(e.id)} use:erklaert={hilfe[e.id]}>{e.name}</button>
   {/each}
   {@render children?.()}
 </nav>

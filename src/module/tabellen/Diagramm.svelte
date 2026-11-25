@@ -14,13 +14,15 @@
     onAuswahl: (id: number | null) => void;
     onVerschieben: (id: number, x: number, y: number, fertig: boolean) => void;
     onNeu: (x: number, y: number) => void;
+    /** Abstand oben für Legende und Fehleranzeige. */
+    oben?: number;
     onFrage: (x: number) => void;
   }
-  let { i, modus, auswahl, abstaende, onAuswahl, onVerschieben, onNeu, onFrage }: Props = $props();
+  let { i, oben = 20, modus, auswahl, abstaende, onAuswahl, onVerschieben, onNeu, onFrage }: Props = $props();
 
   let breite = $state(800);
   let hoehe = $state(500);
-  const R = { l: 76, r: 24, t: 20, b: 58 };
+  const R = $derived({ l: 76, r: 24, t: oben, b: 58 });
   const mx = $derived(i.merkmale[0]);
   const my = $derived(i.ziel);
   const pb = $derived(Math.max(breite - R.l - R.r, 50));
@@ -113,7 +115,7 @@
   const zielText = (y: number) => (klasse ? klassen[y >= 0.5 ? 1 : 0] : `${zahl(y, my.stellen)} ${my.wort ?? my.einheit}`);
   function etikett(x: number, p: number) {
     if (!klasse) return `${zahl(x, mx.stellen)} ${mx.einheit} › etwa ${zahl(p, my.stellen)} ${my.wort ?? my.einheit}`;
-    const ja = p >= 0.5;
+    const ja = p > 0.5;
     return `${zahl(x, mx.stellen)} ${mx.einheit} › ${klassen[ja ? 1 : 0]} (${zahl((ja ? p : 1 - p) * 100)} %)`;
   }
 </script>

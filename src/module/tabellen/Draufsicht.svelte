@@ -11,13 +11,15 @@
     onAuswahl: (id: number | null) => void;
     onVerschieben: (id: number, x: number[], fertig: boolean) => void;
     onNeu: (x: number[]) => void;
+    /** Abstand oben für Legende und Fehleranzeige. */
+    oben?: number;
     onFrage: (x: number[]) => void;
   }
-  let { i, modus, auswahl, onAuswahl, onVerschieben, onNeu, onFrage }: Props = $props();
+  let { i, oben = 20, modus, auswahl, onAuswahl, onVerschieben, onNeu, onFrage }: Props = $props();
 
   let breite = $state(800);
   let hoehe = $state(500);
-  const R = { l: 76, r: 24, t: 20, b: 58 };
+  const R = $derived({ l: 76, r: 24, t: oben, b: 58 });
   const N = 60;
   const ma = $derived(i.merkmale[0]);
   const mb = $derived(i.merkmale[1]);
@@ -39,12 +41,12 @@
     const zw = pb / NF, zh = ph / NF;
     for (let j = 0; j < NF; j++) {
       const zeile = fein.werte[j].map((v, k) => (v + fein.werte[j + 1][k]) / 2);
-      let start: number | null = zeile[0] >= 0.5 ? 0 : null;
+      let start: number | null = zeile[0] > 0.5 ? 0 : null;
       for (let k = 1; k <= NF; k++) {
         const a = zeile[k - 1], b = zeile[k];
-        if (a >= 0.5 !== b >= 0.5) {
+        if (a > 0.5 !== b > 0.5) {
           const kx = k - 1 + (a === b ? 0.5 : (0.5 - a) / (b - a));
-          if (b >= 0.5) start = kx;
+          if (b > 0.5) start = kx;
           else if (start !== null) (r.push({ x: R.l + start * zw, y: R.t + ph - (j + 1) * zh, w: (kx - start) * zw, h: zh }), (start = null));
         }
       }
@@ -172,7 +174,7 @@
     {#if i.frage && i.frage.length === 2 && frageP !== null}
       {@const fx = sx(i.frage[0])}
       {@const fy = sy(i.frage[1])}
-      {@const ja = frageP >= 0.5}
+      {@const ja = frageP > 0.5}
       {@const text = `${werteText(i.frage)} › ${klassen[ja ? 1 : 0]} (${zahl((ja ? frageP : 1 - frageP) * 100)} %)`}
       {@const tb = text.length * 8 + 24}
       {@const tx = Math.min(fx + 16, R.l + pb - tb)}

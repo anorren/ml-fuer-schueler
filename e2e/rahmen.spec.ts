@@ -22,7 +22,7 @@ test('Stufe bleibt ohne Projekt nach Neuladen erhalten (FR-03)', async ({ page }
 
 test('Stufe 2 blendet Tabelle und 3D ein, Stufe 1 wieder aus (FR-03)', async ({ page }) => {
   await page.goto('./');
-  await page.getByRole('button', { name: /Schulkiosk/ }).click();
+  await page.getByRole('button', { name: /Torschuss/ }).click();
   await expect(page.getByRole('button', { name: '3D' })).toHaveCount(0);
   await expect(page.getByRole('button', { name: /^Tabelle/ })).toHaveCount(0);
   await page.getByRole('radio', { name: '2' }).click();

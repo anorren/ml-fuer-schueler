@@ -12,7 +12,7 @@
     zusatz?: string | null;
   }
   let { wert, verlauf, einheit, prozent = false, zusatz = null }: Props = $props();
-  const B = 110, H = 34;
+  const B = 96, H = 26;
   const pfad = $derived.by(() => {
     if (verlauf.length < 2) return '';
     const max = Math.max(...verlauf) || 1;
@@ -26,23 +26,23 @@
 </script>
 
 <div class="fehler karte" aria-live="off">
-  <div>
-    <div class="label"><Begriff id="fehler" /></div>
-    <div class="wert">
+  <div class="oben">
+    <span class="label"><Begriff id="fehler" /></span>
+    <span class="wert">
       {wert === null ? '–' : prozent ? `${zahl(wert, 0)} %` : zahl(wert, 1)}
       {#if richtung < 0}<span class="status-gut" aria-label="sinkt">↓</span>{:else if richtung > 0}<span class="status-achtung" aria-label="steigt">↑</span>{/if}
-    </div>
-    <div class="klein leise">{prozent ? 'daneben im Mittel' : `${einheit} daneben im Mittel`}</div>
-    {#if zusatz}<div class="klein leise">{zusatz}</div>{/if}
+    </span>
+    {#if pfad}<svg width={B} height={H} aria-hidden="true"><polyline points={pfad} /></svg>{/if}
   </div>
-  {#if pfad}
-    <svg width={B} height={H} aria-hidden="true"><polyline points={pfad} /></svg>
-  {/if}
+  <div class="klein leise">{prozent ? 'daneben im Mittel' : `${einheit} daneben im Mittel`}{#if zusatz}<br />{zusatz}{/if}</div>
 </div>
 
 <style>
-  .fehler { position: absolute; top: 14px; right: 14px; z-index: 4; display: flex; gap: 14px; align-items: center; padding: 10px 14px; }
+  /* Kompakt, damit Legende und Fehler in einem Streifen über dem Diagramm Platz haben */
+  .fehler { padding: 8px 14px; }
+  .oben { display: flex; align-items: center; gap: 12px; }
   .label :global(.begriff) { text-transform: uppercase; letter-spacing: 0.06em; }
-  .wert { font-size: 24px; font-weight: 700; line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .wert { font-size: 22px; font-weight: 700; line-height: 1.1; font-variant-numeric: tabular-nums; }
+  svg { margin-left: auto; }
   polyline { fill: none; stroke: var(--modell); stroke-width: 2; }
 </style>

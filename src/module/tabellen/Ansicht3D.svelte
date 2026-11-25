@@ -189,9 +189,12 @@
       c.fillText(text, m.x, m.y);
       c.font = '13px system-ui, -apple-system, sans-serif';
       c.fillStyle = farben.schrift2;
+      // Endwerte entlang der eigenen Kante nach außen schieben, damit sich an der gemeinsamen Ecke nichts überlagert
+      const laenge = Math.hypot(b.sx - a.sx, b.sy - a.sy) || 1;
+      const ux = (b.sx - a.sx) / laenge, uy = (b.sy - a.sy) / laenge;
       const pa = aussen(a), pbb = aussen(b);
-      c.fillText(wa, pa.x, pa.y);
-      c.fillText(wb, pbb.x, pbb.y);
+      c.fillText(wa, pa.x - ux * 18, pa.y - uy * 18);
+      c.fillText(wb, pbb.x + ux * 18, pbb.y + uy * 18);
     };
     // vordere Kanten wählen: die mit der kleineren Tiefe
     const vorneV = p(0, -1, 0).tiefe < p(0, 1, 0).tiefe ? -1 : 1;

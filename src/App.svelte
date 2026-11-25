@@ -17,6 +17,9 @@
 
   type Ansicht = 'galerie' | 'arbeit' | 'machbarkeit';
   let ansicht = $state<Ansicht>('galerie');
+  // Höhe der Kopfleiste (eine oder zwei Zeilen, mit Hilfeband) für die Höhe der Arbeitsfläche
+  let kopfHoehe = $state(61);
+  $effect(() => document.documentElement.style.setProperty('--kopf-hoehe', `${kopfHoehe}px`));
   const startstand = zwischen.laden();
   if (startstand) inhaltPruefen(startstand);
   let projekt = $state<Projekt | null>(startstand);
@@ -142,6 +145,7 @@
   }
 </script>
 
+<div class="kopf" bind:clientHeight={kopfHoehe}>
 <Kopfleiste
   {stufe}
   {gesichert}
@@ -155,6 +159,7 @@
   onNeu={neuBeginnen}
   onStart={() => (ansicht = 'galerie')}
 />
+</div>
 <input bind:this={dateiwahl} type="file" accept=".json,application/json" hidden onchange={oeffnenGewaehlt} />
 
 <main>

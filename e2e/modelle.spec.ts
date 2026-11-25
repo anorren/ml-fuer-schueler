@@ -162,6 +162,10 @@ test('3D-Ansicht ab Stufe 2: drehen, zoomen, zurücksetzen (FR-21)', async ({ pa
   await page.getByRole('button', { name: 'Ansicht zurücksetzen' }).click();
   await expect(leinwand).toHaveAttribute('data-drehung', start!);
   await expect(leinwand).toHaveAttribute('data-zoom', '1.00');
+  // Karten lassen sich neben der 3D-Ansicht öffnen; die Fläche bleibt stehen
+  await page.getByRole('button', { name: 'Training', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Ein Lernschritt' })).toBeVisible();
+  await expect(page.getByRole('img', { name: /3D-Ansicht/ })).toBeVisible();
   await page.getByRole('button', { name: '3D', exact: true }).click();
   await expect(page.getByRole('img', { name: /Draufsicht/ })).toBeVisible();
 });

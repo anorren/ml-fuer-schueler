@@ -45,9 +45,20 @@
   let { stufe, modul, inhalt = $bindable(), tipp, onTippWeg, onGeaendert, onWerte }: AnsichtProps = $props();
   const i = $derived(inhalt as unknown as TabellenInhalt);
 
-  const leiste = $derived(leisteFuer(modul, stufe));
+  // 3D nur bei zwei Eingaben (FR-21); bei einer Eingabe gäbe es dort nichts zu sehen.
+  const leiste = $derived(leisteFuer(modul, stufe).filter((e) => e.id !== '3d' || (inhalt as unknown as TabellenInhalt).merkmale.length === 2));
+  // Legende und Fehleranzeige stehen in einem Streifen über dem Diagramm; das Diagramm beginnt darunter.
+  let legendeH = $state(34);
+  let fehlerH = $state(60);
+  const oben = $derived(Math.max(legendeH, fehlerH) + 18);
   let offenId = $state<LeistenEintrag['id'] | null>(null);
-  const offen = $derived(leiste.find((e) => e.id === offenId) ?? null);
+  // „3D“ ist ein Umschalter für die Ansicht; daneben lassen sich die Karten weiter öffnen (FR-21).
+  let dreiD = $state(false);
+  const offen = $derived(leiste.find((e) => e.id === offenId) ?? (dreiD ? (leiste.find((e) => e.id === '3d') ?? null) : null));
+  function wahl(id: LeistenEintrag['id']) {
+    if (id === '3d') dreiD = !dreiD;
+    else offenId = offenId === id ? null : id;
+  }
   let tabelle = $state(false);
   const tabelleSichtbar = $derived(tabelle && stufe >= 2);
   let auswahl = $state<number | null>(null);
@@ -71,7 +82,7 @@
   const frageJa = $derived(i.frage ? wahrscheinlichkeit(i, i.frage) : null);
   // Zwei Merkmale (Torschuss): Draufsicht statt XY-Diagramm, ab Stufe 2 auch die 3D-Fläche (FR-21).
   const zwei = $derived(i.merkmale.length === 2);
-  const ansicht3d = $derived(zwei && offenId === '3d');
+  const ansicht3d = $derived(zwei && dreiD && stufe >= 2);
   let blick = $state<ReturnType<typeof Ansicht3D>>();
   let neueKlasse = $state(1);
   // Eigenes Thema (FR-13): Ein leeres Projekt beginnt mit dem Anlegen des Themas; später lässt es sich ändern.
@@ -275,6 +286,7 @@
       {:else if zwei}
         <Draufsicht
           {i}
+          {oben}
           modus={offenId === 'daten' ? 'daten' : offenId === 'vorhersage' ? 'vorhersage' : null}
           {auswahl}
           onAuswahl={(id) => (auswahl = id)}
@@ -285,6 +297,7 @@
       {:else}
         <Diagramm
           {i}
+          {oben}
           modus={offenId === 'daten' ? 'daten' : offenId === 'vorhersage' ? 'vorhersage' : null}
           {auswahl}
           abstaende={offenId === 'training' || laeuft}
@@ -295,7 +308,7 @@
         />
       {/if}
     </div>
-    <div class="legende klein">
+    <div class="legende klein" bind:clientHeight={legendeH}>
       {#if klasse}
         <span><i class="kreis voll"></i>{klassen[1]}</span>
         <span><i class="kreis"></i>{klassen[0]}</span>
@@ -310,7 +323,7 @@
       {#if i.frage}<span><i class="raute"></i>Vorhersage</span>{/if}
       {#if i.erfunden}<span class="leise">Beispieldaten, erfunden</span>{/if}
     </div>
-    <FehlerAnzeige wert={fehlerTraining} verlauf={i.verlauf} einheit={einheitWort} prozent={klasse} zusatz={falsch && falsch.von ? `${falsch.falsch} von ${falsch.von} falsch eingeordnet` : null} />
+    <div class="fehlerplatz" bind:clientHeight={fehlerH}><FehlerAnzeige wert={fehlerTraining} verlauf={i.verlauf} einheit={einheitWort} prozent={klasse} zusatz={falsch && falsch.von ? `${falsch.falsch} von ${falsch.von} falsch eingeordnet` : null} /></div>
     {#if tipp}<Tipp text={tipp} onWeg={onTippWeg} />{/if}
   </div>
 
@@ -322,7 +335,7 @@
 
   {#if offen}
     <div class="schublade" class:rechts={ansicht3d}>
-      <InfoKarte titel={offen.name} info={offen.info} frage={offen.id === 'vorhersage'} onSchliessen={() => (offenId = null)}>
+      <InfoKarte titel={offen.name} info={offen.info} frage={offen.id === 'vorhersage'} onSchliessen={() => (offen.id === '3d' ? (dreiD = false) : (offenId = null))}>
         {#if offen.id === 'daten'}
           {#if i.hinweis}<p class="szenario-hinweis">{i.hinweis}</p>{/if}
           {#if i.nachschub}
@@ -468,7 +481,7 @@
               <span class="leise">{m.einheit}{k === i.merkmale.length - 1 ? ' ›' : ''}</span>
             {/each}
             {#if klasse && frageJa !== null}
-              {@const ja = frageJa >= 0.5}
+              {@const ja = frageJa > 0.5}
               <strong class="antwort">{klassen[ja ? 1 : 0]}</strong>
               <span><Begriff id="wahrscheinlichkeit" />: {zahl((ja ? frageJa : 1 - frageJa) * 100)} %</span>
             {:else if frageWert !== null}<strong class="antwort">etwa {zahl(frageWert, i.ziel.stellen)} {einheitWort}</strong>{/if}
@@ -496,7 +509,7 @@
     </div>
   {/if}
 
-  <Leiste eintraege={leiste} offen={offenId} onWahl={(id) => (offenId = offenId === id ? null : id)}>
+  <Leiste eintraege={leiste} offen={offenId} an={ansicht3d ? ['3d'] : []} onWahl={wahl}>
     {#if stufe >= 2}
       <button aria-pressed={tabelle} onclick={() => (tabelle = !tabelle)} use:erklaert={BEDIENUNG.tabelle}>Tabelle</button>
     {/if}
@@ -509,9 +522,11 @@
   /* Das Formular wächst mit seinem Inhalt; die Seite scrollt, statt den Knopf abzuschneiden. */
   .szenario-hinweis { padding: 8px 12px; border-left: 4px solid var(--schrift2); background: var(--hintergrund); border-radius: var(--radius-knopf); }
   .einrichten { justify-content: center; align-items: flex-start; padding-bottom: 24px; height: auto; }
-  .leinwand { position: relative; flex: none; padding: 12px 16px 96px; display: flex; gap: 12px; height: calc(100vh - 100px); min-height: 520px; }
+  /* Höhe nach der gemessenen Kopfleiste (zwei Zeilen im Hochformat, Hilfeband), unten bleibt die Fußzeile sichtbar */
+  .leinwand { position: relative; flex: none; padding: 12px 16px 96px; display: flex; gap: 12px; height: calc(100vh - var(--kopf-hoehe, 61px) - 39px); min-height: 520px; }
   .diagramm { position: relative; flex: 1; min-width: 0; }
   .plot { position: absolute; inset: 8px 8px 4px; }
+  .fehlerplatz { position: absolute; top: 14px; right: 14px; z-index: 4; }
   .legende { position: absolute; top: 14px; left: 92px; display: flex; gap: 14px; align-items: center; padding: 6px 12px; background: var(--flaeche); border: 1px solid var(--linie); border-radius: var(--radius-knopf); pointer-events: none; flex-wrap: wrap; max-width: calc(100% - 400px); }
   .legende span { display: inline-flex; align-items: center; gap: 6px; }
   .legende i { display: inline-block; }
