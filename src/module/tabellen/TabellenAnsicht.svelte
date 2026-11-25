@@ -12,7 +12,7 @@
   import FehlerAnzeige from './FehlerAnzeige.svelte';
   import DatenTabelle from './DatenTabelle.svelte';
   import type { TabellenInhalt } from './typen';
-  import { fehler, lernschritt, punkteNorm, trainingFertig, verlaufErgaenzen, vorhersage, zahl } from './rechnen';
+  import { fehler, geradeEcht, kosten, LERNRATE_STANDARD, lernschritt, punkteNorm, trainingFertig, verlaufErgaenzen, vorhersage, zahl, type Lernschritt } from './rechnen';
 
   // Modul „Lernen aus Tabellen“: Leinwand mit Diagramm, Karten und Training (FR-11, FR-12, FR-16, FR-19, FR-20, FR-22).
   let { stufe, modul, inhalt = $bindable(), tipp, onTippWeg, onGeaendert, onWerte }: AnsichtProps = $props();
@@ -34,19 +34,28 @@
   const fehlerTest = $derived(fehler(i, true));
   const einheitWort = $derived(i.ziel.wort ?? i.ziel.einheit);
   const frageWert = $derived(i.frage ? vorhersage(i, i.frage) : null);
+  // FR-17: Lernrate erst ab Stufe 2 einstellbar; auf Stufe 1 gilt die Standardrate, ohne die gespeicherte Wahl zu verlieren.
+  const lernrate = $derived(stufe >= 2 ? i.lernrate : LERNRATE_STANDARD);
+  let letzter = $state<Lernschritt | null>(null);
+  const gerade = $derived(geradeEcht(i));
+  const kostenJetzt = $derived(kosten(i.modell, punkteNorm(i)));
+  const MERKMAL = $derived(i.merkmale[0].name);
+  const ZIEL = $derived(i.ziel.wort ?? i.ziel.name);
 
   $effect(() => onWerte({ verlauf: [...i.verlauf] }));
 
   function schritt(): boolean {
     const p = punkteNorm(i);
     if (!p.length) return false;
-    const s = lernschritt(i.modell, p, i.lernrate);
+    const s = lernschritt(i.modell, p, lernrate);
+    letzter = s;
     const spanne = i.ziel.max - i.ziel.min;
     if (!i.verlauf.length) i.verlauf = verlaufErgaenzen(i.verlauf, Math.sqrt(s.kostenVorher) * spanne);
     i.modell = s.nachher;
     i.schritte += 1;
     i.verlauf = verlaufErgaenzen(i.verlauf, Math.sqrt(s.kostenNachher) * spanne);
-    return Number.isFinite(s.kostenNachher) && s.kostenNachher < 1e6;
+    // Läuft das Modell weg (Lernrate zu groß), endet das Training, bevor die Gerade ganz verschwindet.
+    return Number.isFinite(s.kostenNachher) && s.kostenNachher < 4;
   }
 
   function einLernschritt() {
@@ -55,10 +64,18 @@
     onGeaendert();
   }
 
+  let pause = 0;
+
   function bild() {
     for (let k = 0; k < 2; k++) {
       laufSchritte += 1;
       if (!schritt() || trainingFertig(i.verlauf) || laufSchritte >= 800) return anhalten();
+      // Steigt der Fehler, läuft das Training langsam weiter, damit man das Springen sieht (FR-17).
+      const v = i.verlauf;
+      if (v.length > 1 && v[v.length - 1] > v[v.length - 2]) {
+        pause = window.setTimeout(() => (rahmen = requestAnimationFrame(bild)), 350);
+        return;
+      }
     }
     rahmen = requestAnimationFrame(bild);
   }
@@ -73,6 +90,7 @@
   function anhalten() {
     if (!laeuft) return;
     cancelAnimationFrame(rahmen);
+    clearTimeout(pause);
     laeuft = false;
     onGeaendert();
   }
@@ -82,8 +100,18 @@
     i.modell = { art: 'gerade', w: i.merkmale.map(() => 0), b: 0 };
     i.schritte = 0;
     i.verlauf = [];
+    letzter = null;
     onGeaendert();
   }
+
+  function lernrateSetzen(v: number) {
+    i.lernrate = v;
+    onGeaendert();
+  }
+
+  /** Zahl mit Vorzeichen für Rechenwege, z. B. „− 0,231“. */
+  const mitVorzeichen = (v: number, stellen = 3) => (v < 0 ? '− ' : '+ ') + zahl(Math.abs(v), stellen);
+  const klammer = (v: number, stellen = 3) => (v < 0 ? `(−${zahl(-v, stellen)})` : zahl(v, stellen));
 
   function verschieben(id: number, x: number, y: number, fertig: boolean) {
     const z = i.zeilen.find((z) => z.id === id);
@@ -126,7 +154,10 @@
     frageSetzen(Math.min(Math.max(v, m.min), m.max));
   }
 
-  onDestroy(() => cancelAnimationFrame(rahmen));
+  onDestroy(() => {
+    cancelAnimationFrame(rahmen);
+    clearTimeout(pause);
+  });
 </script>
 
 <section class="leinwand">
@@ -178,6 +209,10 @@
           {/if}
         {:else if offen.id === 'modell'}
           <p>Das <Begriff id="modell" /> ist eine Gerade. Beim Training sucht die App die Gerade, die am besten zu den <Begriff id="trainingsdaten" /> passt.</p>
+          {#if stufe >= 3}
+            <p class="formel">{ZIEL} = <span class="w">{zahl(gerade.steigung, 2)}</span> · {MERKMAL} {mitVorzeichen(gerade.achsenabschnitt, 1)}</p>
+            <p class="klein leise">Steigung {zahl(gerade.steigung, 2)}: Pro {i.merkmale[0].einheit} mehr steigt die Vorhersage um {zahl(gerade.steigung, 2)} {einheitWort}. Achsenabschnitt {zahl(gerade.achsenabschnitt, 1)}: der Wert der Geraden bei 0 {i.merkmale[0].einheit}.</p>
+          {/if}
           {#if stufe >= 2}<p class="klein leise">S-Kurve und Netz zum Auswählen kommen mit der nächsten Version.</p>{/if}
         {:else if offen.id === 'training'}
           <div class="zeile">
@@ -186,7 +221,29 @@
             <span class="raum"></span>
             <span class="klein leise">Lernschritte: <strong class="zahl">{i.schritte}</strong></span>
           </div>
-          <p class="klein leise">Die gestrichelten Linien zeigen, wie weit jeder Punkt vom Modell entfernt ist. Beim Training werden sie kürzer.</p>
+          {#if stufe >= 2}
+            <div class="zeile lernrate">
+              <label for="lernrate"><Begriff id="lernrate" /></label>
+              <input id="lernrate" type="range" min="0.05" max="1" step="0.05" value={i.lernrate} oninput={(e) => lernrateSetzen(Number(e.currentTarget.value))} use:erklaert={'Stellt ein, wie groß jeder Lernschritt ist. Zu klein dauert lange, zu groß lässt das Modell springen.'} />
+              <strong class="zahl">{zahl(i.lernrate, 2)}</strong>
+            </div>
+            <p class="klein leise">Beim <Begriff id="gradientenabstieg" /> rückt die Gerade bei jedem Schritt ein Stück in die Richtung, in der die <Begriff id="kostenfunktion" /> am stärksten sinkt. Die Lernrate bestimmt, wie groß dieser Schritt ist.</p>
+          {:else}
+            <p class="klein leise">Die gestrichelten Linien zeigen, wie weit jeder Punkt vom Modell entfernt ist. Beim Training werden sie kürzer.</p>
+          {/if}
+          {#if stufe >= 3}
+            <div class="rechenweg">
+              <div class="label">Rechenweg, <Begriff id="normiert" /> gerechnet</div>
+              <p>ŷ = w · x + b &nbsp;·&nbsp; K = <span class="bruch">1/n</span> Σ (ŷ − y)² = <strong>{zahl(kostenJetzt, 4)}</strong></p>
+              {#if letzter}
+                <p>w: {zahl(letzter.vorher.w[0], 3)} − {zahl(lernrate, 2)} · {klammer(letzter.gradW[0])} = <strong>{zahl(letzter.nachher.w[0], 3)}</strong></p>
+                <p>b: {zahl(letzter.vorher.b, 3)} − {zahl(lernrate, 2)} · {klammer(letzter.gradB)} = <strong>{zahl(letzter.nachher.b, 3)}</strong></p>
+                <p class="klein leise">Neues Gewicht = altes Gewicht − Lernrate · Steigung der Kosten (Gradient). Die Kosten sanken von {zahl(letzter.kostenVorher, 4)} auf {zahl(letzter.kostenNachher, 4)}.</p>
+              {:else}
+                <p class="klein leise">Macht einen Lernschritt, dann steht hier, wie w und b neu berechnet werden.</p>
+              {/if}
+            </div>
+          {/if}
         {:else if offen.id === 'vorhersage'}
           <div class="zeile frage">
             <label for="frage">{i.merkmale[0].name}</label>
@@ -237,4 +294,9 @@
   .antwort { color: var(--frage-text); font-size: 22px; }
   .zahl { font-variant-numeric: tabular-nums; color: var(--schrift); }
   .trainieren { min-width: 140px; }
+  .lernrate input { flex: 1; min-width: 160px; accent-color: var(--modell); min-height: 36px; }
+  .formel { font-size: 18px; font-weight: 600; }
+  .formel .w { color: var(--modell); }
+  .rechenweg { display: flex; flex-direction: column; gap: 4px; padding: 10px 12px; border: 1px solid var(--linie); border-radius: var(--radius-knopf); background: var(--hintergrund); font-variant-numeric: tabular-nums; font-size: 14px; }
+  .bruch { font-size: 12px; }
 </style>

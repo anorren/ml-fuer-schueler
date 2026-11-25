@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { achsenwerte, fehler, kosten, lernschritt, punkteNorm, trainingFertig, verlaufErgaenzen, vorhersage, zahl } from './rechnen';
+import { achsenwerte, fehler, geradeEcht, kosten, lernschritt, punkteNorm, trainingFertig, verlaufErgaenzen, vorhersage, zahl } from './rechnen';
 import { inhaltHerstellen, istInhalt, vorschau } from './szenarien';
 import type { TabellenInhalt } from './typen';
 
@@ -55,6 +55,15 @@ describe('Gerade und Gradientenabstieg (DEC-05, FR-16)', () => {
     i.zeilen.push({ id: 99, x: [30], y: 20, test: false });
     trainieren(i, 3000);
     expect(vorhersage(i, [30])).toBeLessThan(vorher - 5);
+  });
+
+  it('rechnet Steigung und Achsenabschnitt in echte Einheiten um (FR-18)', () => {
+    const i = kiosk();
+    trainieren(i, 3000);
+    const { steigung, achsenabschnitt } = geradeEcht(i);
+    for (const t of [12, 20, 31]) expect(steigung * t + achsenabschnitt).toBeCloseTo(vorhersage(i, [t]), 6);
+    expect(steigung).toBeGreaterThan(3);
+    expect(steigung).toBeLessThan(5);
   });
 
   it('eine viel zu große Lernrate lässt die Kosten steigen (Grundlage FR-17)', () => {

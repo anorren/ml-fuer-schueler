@@ -26,3 +26,14 @@ describe('Module (FR-02, FR-03, NFR-08)', () => {
     expect(szenarioTitel(t, null)).toBe('Leeres Projekt');
   });
 });
+
+describe('Tipp bei steigendem Fehler (FR-17, FR-24)', () => {
+  const regel = modul('tabellen').regeln.find((r) => r.id === 'fehler-steigt')!;
+  const lage = (verlauf: number[]) => ({ ungesichertSeit: null, jetzt: 0, werte: { verlauf } });
+  it('greift nach drei Anstiegen in Folge', () => {
+    expect(regel.greift(lage([50, 40, 45, 60, 90]))).toBe(true);
+    expect(regel.greift(lage([50, 40, 45, 60]))).toBe(false);
+    expect(regel.greift(lage([60, 40, 20, 10, 5]))).toBe(false);
+    expect(regel.greift(lage([]))).toBe(false);
+  });
+});

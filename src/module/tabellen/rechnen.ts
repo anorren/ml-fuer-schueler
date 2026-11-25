@@ -58,6 +58,17 @@ export function lernschritt(m: Gerade, punkte: PunktN[], lernrate: number): Lern
   return { vorher: m, nachher, gradW, gradB, kostenVorher: kosten(m, punkte), kostenNachher: kosten(nachher, punkte) };
 }
 
+/** Standard-Lernrate; auf Stufe 1 gilt immer sie (FR-17: einstellbar erst ab Stufe 2). */
+export const LERNRATE_STANDARD = 0.5;
+
+/** Gerade in echten Einheiten: Zielgröße = steigung · Merkmal + achsenabschnitt (FR-18). */
+export function geradeEcht(i: TabellenInhalt): { steigung: number; achsenabschnitt: number } {
+  const mx = i.merkmale[0], my = i.ziel;
+  const xr = mx.max - mx.min, yr = my.max - my.min;
+  const w = i.modell.w[0];
+  return { steigung: (yr * w) / xr, achsenabschnitt: my.min + yr * (i.modell.b - (w * mx.min) / xr) };
+}
+
 /** Training gilt als fertig, wenn sich der Fehler über zehn Schritte kaum noch ändert. */
 export function trainingFertig(verlauf: number[]): boolean {
   if (verlauf.length < 12) return false;

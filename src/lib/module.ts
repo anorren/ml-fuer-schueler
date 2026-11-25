@@ -72,8 +72,9 @@ const tabellen: Modul = {
       text: 'Der Fehler steigt. Probiert eine kleinere Lernrate.',
       greift: (l) => {
         const v = (l.werte?.verlauf as number[] | undefined) ?? [];
-        if (v.length < 6) return false;
-        const s = v.slice(-6);
+        // drei Anstiege in Folge: Das Modell springt, statt besser zu werden
+        if (v.length < 4) return false;
+        const s = v.slice(-4);
         return s.every((w, k) => k === 0 || w > s[k - 1]);
       }
     }

@@ -1,7 +1,7 @@
 // Vorbereitete Szenarien (FR-10). Alle Daten sind erfunden und so gekennzeichnet.
 import type { TabellenInhalt, Zeile } from './typen';
 
-const LERNRATE = 0.5;
+import { LERNRATE_STANDARD as LERNRATE } from './rechnen';
 
 function zeilen(train: [number, number][], test: [number, number][] = []): Zeile[] {
   return [...train.map(([x, y]) => ({ x: [x], y, test: false })), ...test.map(([x, y]) => ({ x: [x], y, test: true }))].map((z, k) => ({ ...z, id: k + 1 }));

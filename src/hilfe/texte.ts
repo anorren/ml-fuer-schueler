@@ -36,6 +36,18 @@ export const BEGRIFFE: Record<string, Begriff> = {
     wort: 'Lernrate',
     erklaerung: 'Die Lernrate bestimmt, wie groß jeder Lernschritt ist. Ist sie zu groß, springt das Modell hin und her, statt besser zu werden.'
   },
+  kostenfunktion: {
+    wort: 'Kostenfunktion',
+    erklaerung: 'Die Kostenfunktion misst mit einer Zahl, wie schlecht das Modell passt. Hier mittelt sie die quadrierten Abstände der Punkte zur Geraden.'
+  },
+  gradientenabstieg: {
+    wort: 'Gradientenabstieg',
+    erklaerung: 'Der Gradientenabstieg verbessert das Modell Schritt für Schritt. Er schiebt es jeweils in die Richtung, in der die Kosten am schnellsten sinken.'
+  },
+  normiert: {
+    wort: 'normiert',
+    erklaerung: 'Normiert heißt: Alle Werte werden auf den Bereich von 0 bis 1 umgerechnet. So passt dieselbe Lernrate für jedes Thema.'
+  },
   bias: {
     wort: 'Bias',
     erklaerung: 'Bias heißt Verzerrung: Die Trainingsdaten zeigen nur einen Teil der Welt. Für den Rest schätzt das Modell dann schlecht.'

@@ -97,3 +97,56 @@ test('Projekt aus Version 0.1.0 ohne Daten öffnet das Kiosk-Beispiel', async ({
   await page.locator('input[type=file]').setInputFiles({ name: 'alt.json', mimeType: 'application/json', buffer: Buffer.from(alt) });
   await expect(page.locator('circle.training')).toHaveCount(12);
 });
+
+test('Stufe 2: zu große Lernrate lässt den Fehler steigen, ein Tipp erscheint (FR-17, FR-24)', async ({ page }) => {
+  await kiosk(page);
+  await page.getByRole('radio', { name: '2' }).click();
+  await page.getByRole('button', { name: 'Training', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Gradientenabstieg' })).toBeVisible();
+  await page.getByRole('button', { name: 'Lernrate' }).click();
+  await expect(page.getByRole('tooltip')).toContainText('wie groß jeder Lernschritt ist');
+  await page.getByRole('button', { name: 'Erklärung schließen' }).click();
+  await page.locator('#lernrate').evaluate((el: HTMLInputElement) => {
+    el.value = '1';
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  await trainieren(page);
+  await expect(page.getByText('Der Fehler steigt. Probiert eine kleinere Lernrate.')).toBeVisible();
+  await expect(page.locator('.fehler [aria-label=steigt]')).toBeVisible();
+  await page.getByRole('button', { name: 'Tipp schließen' }).click();
+  await page.getByRole('button', { name: 'Von vorn' }).click();
+  await page.locator('#lernrate').evaluate((el: HTMLInputElement) => {
+    el.value = '0.5';
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  await trainieren(page);
+  expect(await fehlerWert(page)).toBeLessThan(3);
+});
+
+test('Stufe 1 nutzt die Standard-Lernrate, auch wenn auf Stufe 2 eine andere gewählt war (FR-03, FR-17)', async ({ page }) => {
+  await kiosk(page);
+  await page.getByRole('radio', { name: '2' }).click();
+  await page.getByRole('button', { name: 'Training', exact: true }).click();
+  await page.locator('#lernrate').evaluate((el: HTMLInputElement) => {
+    el.value = '1';
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  await page.getByRole('radio', { name: '1' }).click();
+  await expect(page.locator('#lernrate')).toHaveCount(0);
+  await trainieren(page);
+  expect(await fehlerWert(page)).toBeLessThan(3);
+});
+
+test('Stufe 3: Formel, Steigung und Rechenweg eines Lernschritts sind mit Zahlen ablesbar (FR-18)', async ({ page }) => {
+  await kiosk(page);
+  await page.getByRole('radio', { name: '3' }).click();
+  await page.getByRole('button', { name: 'Training', exact: true }).click();
+  await expect(page.getByText('Macht einen Lernschritt, dann steht hier')).toBeVisible();
+  await page.getByRole('button', { name: 'Ein Lernschritt' }).click();
+  await expect(page.locator('.rechenweg')).toContainText(/w: 0 − 0,5 · \(−[\d,]+\) = [\d,]+/);
+  await expect(page.locator('.rechenweg')).toContainText(/Die Kosten sanken von [\d,]+ auf [\d,]+/);
+  await trainieren(page);
+  await page.getByRole('button', { name: 'Modell', exact: true }).click();
+  await expect(page.locator('.formel')).toHaveText(/Eis = [\d,]+ · Temperatur − [\d,]+/);
+  await expect(page.getByText(/^Steigung [\d,]+: Pro °C mehr/)).toBeVisible();
+});
