@@ -12,5 +12,5 @@
 <style>
   .tipp { display: flex; align-items: center; gap: 10px; padding: 4px 4px 4px 12px; font-size: 14px; border-radius: var(--radius-knopf); background: var(--hintergrund); border-left: 4px solid var(--schrift3); }
   .text { flex: 1; }
-  button { border: 0; background: none; min-width: 40px; min-height: 36px; padding: 0; color: var(--schrift2); }
+  button { border: 0; background: none; min-width: 44px; min-height: 44px; padding: 0; color: var(--schrift2); }
 </style>

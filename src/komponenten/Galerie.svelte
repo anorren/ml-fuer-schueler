@@ -81,7 +81,7 @@
   .module button.an { background: var(--modell); border-color: var(--modell); color: #fff; }
   .module button:disabled { opacity: 0.6; }
   .name { font-weight: 600; }
-  .lehrplan { font-size: 12px; opacity: 0.85; }
+  .lehrplan { font-size: 13px; }
   .raster { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
   .szenario { display: flex; flex-direction: column; align-items: stretch; gap: 6px; padding: 14px; text-align: left; height: auto; white-space: normal; }
   .vorschau { display: flex; align-items: center; justify-content: center; overflow: hidden; height: 110px; border: 1px solid var(--linie); border-radius: var(--radius-knopf); background: var(--hintergrund); }
@@ -92,7 +92,7 @@
   .vorschau circle.voll { fill: var(--schrift); }
   .vorschau rect.t.voll { fill: var(--frage); }
   .zeile { display: flex; justify-content: space-between; align-items: center; }
-  .marke { font-size: 12px; padding: 2px 9px; border-radius: 20px; background: var(--modell-hell); }
+  .marke { font-size: 13px; padding: 2px 9px; border-radius: 20px; background: var(--modell-hell); }
   .leer { border-style: dashed; align-items: center; justify-content: center; }
   .plus { font-size: 40px; color: var(--schrift3); }
   .hinweis { margin-top: 20px; }

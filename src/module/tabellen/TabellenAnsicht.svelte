@@ -556,16 +556,16 @@
   .bildkopf { display: flex; align-items: flex-start; gap: 12px; padding: 10px 12px 0 14px; }
   .links { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
   .knoepfe { display: flex; gap: 8px; }
-  .vergroessern { min-height: 40px; padding: 0 12px; }
+  .vergroessern { padding: 0 12px; }
   .reiter { display: inline-flex; align-self: flex-start; border: 1px solid var(--linie); border-radius: var(--radius-knopf); overflow: hidden; }
-  .reiter button { border: 0; border-radius: 0; min-height: 38px; }
+  .reiter button { border: 0; border-radius: 0; }
   .reiter button + button { border-left: 1px solid var(--linie); }
   .reiter button[aria-pressed='true'] { background: var(--modell-hell); color: #174a8c; }
   .plot { position: relative; flex: 1; min-height: 0; margin: 0 6px; }
   .zeilen { display: flex; flex-direction: column; gap: 6px; padding: 0 12px 10px; }
   .hinweis { margin: 0; padding: 6px 12px; border-radius: var(--radius-knopf); background: var(--hintergrund); border-left: 4px solid var(--schrift3); color: var(--schrift2); }
   .hinweis.frage { border-left-color: var(--frage); }
-  .hinweis button { min-height: 32px; margin-left: 8px; font-size: 13px; }
+  .hinweis button { margin-left: 8px; font-size: 13px; }
   .legende { display: flex; gap: 6px 14px; align-items: center; flex-wrap: wrap; color: var(--schrift2); }
   .legende span { display: inline-flex; align-items: center; gap: 6px; }
   .legende i { display: inline-block; }
@@ -576,7 +576,7 @@
   .strich { width: 16px; height: 3px; background: var(--modell); border-radius: 2px; }
   .strich.dunkel { background: var(--grenze, #174a8c); }
   .verlauf { width: 16px; height: 12px; background: linear-gradient(90deg, var(--modell-hell), var(--modell)); border: 1px solid var(--modell); }
-  .klein-wahl button { min-height: 36px; padding: 0 14px; }
+  .klein-wahl button { padding: 0 14px; }
   .raute { width: 9px; height: 9px; background: var(--frage); transform: rotate(45deg); }
   p { margin: 0; }
   .zeile { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
@@ -591,7 +591,7 @@
   .formel { font-size: 18px; font-weight: 600; }
   .formel .w { color: var(--modell); }
   .rechenweg { display: flex; flex-direction: column; gap: 4px; padding: 10px 12px; border: 1px solid var(--linie); border-radius: var(--radius-knopf); background: var(--hintergrund); font-variant-numeric: tabular-nums; font-size: 14px; }
-  .bruch { font-size: 12px; }
+  .bruch { font-size: 13px; }
   .formel .bruch { font-size: inherit; }
   .wahl { display: flex; gap: 8px; }
   .wahl button { flex: 1; }

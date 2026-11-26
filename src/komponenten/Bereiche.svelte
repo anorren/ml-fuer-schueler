@@ -73,7 +73,7 @@
   .kopfzeile { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; border: 0; border-radius: 0; background: none; text-align: left; padding: 6px 4px 6px 14px; min-height: 52px; }
   .nr { width: 24px; height: 24px; flex: none; display: grid; place-items: center; border-radius: 50%; border: 1px solid var(--linie); background: var(--hintergrund); font-size: 13px; }
   .auf .nr { background: var(--modell); border-color: var(--modell); color: #fff; }
-  .auf.frage .nr { background: var(--frage); border-color: var(--frage); }
+  .auf.frage .nr { background: var(--frage-text); border-color: var(--frage-text); }
   .name { font-size: 16px; font-weight: 600; }
   .stand { flex: 1; min-width: 0; text-align: right; font-size: 13px; color: var(--schrift2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .pfeil { color: var(--schrift3); font-size: 18px; transition: transform 0.15s; }

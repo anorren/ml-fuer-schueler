@@ -36,5 +36,5 @@
   circle { stroke-width: 2; }
   .ein, .aus { fill: var(--flaeche); stroke: var(--schrift); }
   .neuron { fill: var(--modell-hell); stroke: var(--modell); }
-  text { font-size: 12px; fill: var(--schrift2); }
+  text { font-size: 13px; fill: var(--schrift2); }
 </style>

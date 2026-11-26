@@ -63,6 +63,12 @@ test('Teamname landet im Dateinamen und im letzten Stand (FR-08, FR-06)', async 
   const download = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Speichern' }).click();
   expect((await download).suggestedFilename()).toMatch(/^ML-Schule Die Pinguine \d{4}-\d\d-\d\d\.json$/);
+  // Meldungen bleiben stehen, bis man sie wegtippt (Apple HIG: keine Zeitabläufe)
+  const meldung = page.getByRole('status').filter({ hasText: 'Projektdatei gespeichert' });
+  await page.waitForTimeout(5000);
+  await expect(meldung).toBeVisible();
+  await page.getByRole('button', { name: 'Meldung schließen' }).click();
+  await expect(meldung).toHaveCount(0);
   await page.reload();
   await expect(page.getByRole('textbox', { name: 'Teamname' })).toHaveValue('Die Pinguine');
   await page.getByRole('button', { name: 'Zur Startseite' }).click();

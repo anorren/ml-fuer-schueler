@@ -22,7 +22,7 @@ export default defineConfig({
         scope: '/ml-fuer-schueler/',
         display: 'standalone',
         background_color: '#f9f9f7',
-        theme_color: '#2a78d6',
+        theme_color: '#2670cc',
         icons: [{ src: 'icon.svg', sizes: 'any', type: 'image/svg+xml' }]
       },
       workbox: { globPatterns: ['**/*.{js,css,html,svg,png,json}'] }

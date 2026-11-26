@@ -81,16 +81,21 @@
 
   onMount(() => {
     const aufraeumen = hilfeEinrichten();
+    const weiter = (e: PointerEvent) => {
+      if (meldung && !(e.target as Element | null)?.closest?.('.meldung')) meldung = null;
+    };
+    addEventListener('pointerdown', weiter, true);
     const uhr = setInterval(() => (jetzt = Date.now()), 30_000);
     return () => {
       aufraeumen();
+      removeEventListener('pointerdown', weiter, true);
       clearInterval(uhr);
     };
   });
 
   function melden(text: string, art: 'gut' | 'achtung' | 'info' = 'info') {
+    // Meldungen bleiben stehen, bis man sie wegtippt oder woanders weiterarbeitet (Apple HIG: keine Zeitabläufe).
     meldung = { text, art };
-    setTimeout(() => (meldung = null), 4500);
   }
 
   function alsGesichert() {
@@ -219,7 +224,10 @@
 <Blase />
 
 {#if meldung}
-  <div class="meldung karte" class:gut={meldung.art === 'gut'} class:achtung={meldung.art === 'achtung'} role="status">{meldung.text}</div>
+  <div class="meldung karte" class:gut={meldung.art === 'gut'} class:achtung={meldung.art === 'achtung'} role="status">
+    <span>{meldung.text}</span>
+    <button class="zu" aria-label="Meldung schließen" data-hilfe-frei onclick={() => (meldung = null)}>✕</button>
+  </div>
 {/if}
 {#if updateBereit}
   <div class="meldung karte" role="status">
@@ -232,9 +240,11 @@
 
 <style>
   main { flex: 1; display: flex; flex-direction: column; }
-  .meldung { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); padding: 12px 16px; display: flex; gap: 12px; align-items: center; z-index: 20; max-width: 90vw; }
+  .meldung .zu { border: 0; background: none; min-width: 44px; padding: 0; color: var(--schrift2); }
+  .meldung { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom)); transform: translateX(-50%); padding: 12px 16px; display: flex; gap: 12px; align-items: center; z-index: 20; max-width: 90vw; }
   .meldung.gut { border-left: 4px solid var(--status-gut); }
   .meldung.achtung { border-left: 4px solid var(--status-achtung); }
-  footer { text-align: center; padding: 8px; }
+  /* Auf dem Home-Bildschirm nicht unter die Home-Leiste rutschen (Apple HIG: sichere Bereiche) */
+  footer { text-align: center; padding: 8px 8px calc(8px + env(safe-area-inset-bottom)); }
   footer a { color: inherit; }
 </style>

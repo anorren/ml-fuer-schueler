@@ -24,7 +24,7 @@
   let breite = $state(800);
   let hoehe = $state(500);
   let canvas: HTMLCanvasElement;
-  let farben = { modell: '#2a78d6', hell: '#e6effb', schrift: '#1f2328', schrift2: '#59636e', linie: '#d8dee4', frage: '#d9700b', flaeche: '#ffffff' };
+  let farben = { modell: '#2670cc', hell: '#e6effb', schrift: '#1f2328', schrift2: '#59636e', linie: '#d8dee4', frage: '#d9700b', flaeche: '#ffffff' };
 
   onMount(() => {
     const s = getComputedStyle(canvas);

@@ -73,7 +73,7 @@
   /* Der Szenariotitel nimmt den freien Platz und kürzt sich mit „…“, statt die Leiste umbrechen zu lassen. */
   .titel { text-transform: none; flex: 1 1 0; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .titel + .team, .titel ~ .raum { flex: none; }
-  .team { font: inherit; font-size: 14px; min-height: 36px; width: 160px; padding: 0 10px; border: 1px solid var(--linie); border-radius: var(--radius-knopf); background: var(--hintergrund); color: var(--schrift); }
+  .team { font: inherit; font-size: 14px; min-height: 44px; width: 160px; padding: 0 10px; border: 1px solid var(--linie); border-radius: var(--radius-knopf); background: var(--hintergrund); color: var(--schrift); }
   .team:focus { outline: 3px solid var(--modell); outline-offset: 1px; background: var(--flaeche); }
   .raum { flex: 1; }
   .stufen { display: flex; border: 1px solid var(--linie); border-radius: var(--radius-knopf); overflow: hidden; }
@@ -81,7 +81,7 @@
   .stufen button:last-child { border-right: 0; }
   .stufen button.an { background: var(--modell); color: #fff; }
   .speichern { display: inline-flex; flex-direction: column; justify-content: center; line-height: 1.15; }
-  .zustand { font-size: 11px; }
+  .zustand { font-size: 12px; }
   /* Hilfe nie in Blau oder Orange (Designentwurf, Hilfe nach unten) */
   .hilfeknopf[aria-pressed='true'] { background: var(--schrift2); border-color: var(--schrift2); color: var(--flaeche); }
   .hilfeband { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 4px 20px; background: var(--hintergrund); border-bottom: 1px solid var(--linie); color: var(--schrift2); }

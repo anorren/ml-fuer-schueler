@@ -72,7 +72,7 @@
               <input inputmode="decimal" aria-label="{i.ziel.name} Zeile {z.id}" value={zahl(z.y, i.ziel.stellen, false)} onchange={(e) => setzeY(z.id, e.currentTarget.value)} />
             {/if}
           </td>
-          <td><input type="checkbox" aria-label="Zeile {z.id} als Testdaten" checked={z.test} onchange={(e) => { z.test = e.currentTarget.checked; onAendern(); }} /></td>
+          <td><label class="testfeld"><input type="checkbox" aria-label="Zeile {z.id} als Testdaten" checked={z.test} onchange={(e) => { z.test = e.currentTarget.checked; onAendern(); }} /></label></td>
           <td><button class="weg" aria-label="Zeile {z.id} löschen" onclick={() => loeschen(z.id)}>✕</button></td>
         </tr>
       {/each}
@@ -84,16 +84,19 @@
 <style>
   .tabelle { display: flex; flex-direction: column; gap: 8px; min-height: 0; }
   table { border-collapse: collapse; width: 100%; font-size: 14px; }
-  th { text-align: left; font-size: 12px; font-weight: 600; color: var(--schrift2); padding: 4px 4px 6px; vertical-align: bottom; position: sticky; top: 0; background: var(--flaeche); }
+  th { text-align: left; font-size: 13px; font-weight: 600; color: var(--schrift2); padding: 4px 4px 6px; vertical-align: bottom; position: sticky; top: 0; background: var(--flaeche); }
   .einheit { display: block; font-weight: 400; color: var(--schrift3); }
   td { padding: 2px 4px; border-top: 1px solid var(--linie); }
   tr.gewaehlt td { background: var(--hintergrund); }
   tr.test input:not([type='checkbox']) { color: var(--frage-text); }
   input:not([type='checkbox']) { font: inherit; width: 100%; min-width: 56px; min-height: 36px; padding: 0 8px; border: 1px solid transparent; border-radius: 6px; background: none; font-variant-numeric: tabular-nums; }
   input:not([type='checkbox']):focus { border-color: var(--modell); outline: none; background: var(--flaeche); }
-  select { font: inherit; width: 100%; min-width: 64px; min-height: 36px; padding: 0 6px; border: 1px solid var(--linie); border-radius: 6px; background: var(--flaeche); }
+  /* Safari beachtet die Höhe einer Auswahl nur ohne Systemdarstellung; der Pfeil kommt deshalb als Hintergrund. */
+  select { font: inherit; width: 100%; min-width: 72px; height: 40px; padding: 0 24px 0 8px; border: 1px solid var(--linie); border-radius: 6px; color: var(--schrift); -webkit-appearance: none; appearance: none; background: var(--flaeche) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%2352514e' stroke-width='1.5'/%3E%3C/svg%3E") no-repeat right 8px center; }
   tr.test select { color: var(--frage-text); }
-  input[type='checkbox'] { width: 22px; height: 22px; accent-color: var(--frage); }
+  /* Tippfläche 44 × 44 pt (Apple HIG), das Kästchen selbst bleibt klein */
+  .testfeld { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; cursor: pointer; }
+  input[type='checkbox'] { width: 24px; height: 24px; margin: 0; accent-color: var(--frage-text); }
   .weg { min-height: 36px; min-width: 36px; padding: 0; border: 0; background: none; color: var(--schrift2); }
   .neu { align-self: flex-start; }
   .unsichtbar { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
