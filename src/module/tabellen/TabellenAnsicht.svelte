@@ -548,7 +548,8 @@
   /* Das Formular „Eigenes Thema“ wächst mit seinem Inhalt; hier darf die Seite scrollen. */
   .leinwand.einrichten { display: flex; justify-content: center; align-items: flex-start; height: auto; padding-bottom: 24px; }
   @media (max-aspect-ratio: 1/1) {
-    .leinwand { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 45fr) minmax(0, 55fr); }
+    /* Bei wenig Platz scrollt die Seite, statt das Diagramm flach zu quetschen. */
+    .leinwand { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(320px, 45fr) minmax(300px, 55fr); min-height: 660px; }
     .leinwand.gross { grid-template-rows: minmax(0, 1fr); }
   }
   .bild { display: flex; flex-direction: column; min-width: 0; min-height: 0; }

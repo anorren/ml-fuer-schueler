@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { punkteFesthalten } from './wischen';
   import type { TabellenInhalt } from './typen';
   import { achsenwerte, klassenbereiche, luecken, vorhersage, wahrscheinlichkeit, zahl } from './rechnen';
 
@@ -123,6 +124,7 @@
 <div class="flaeche" bind:clientWidth={breite} bind:clientHeight={hoehe}>
   <svg
     bind:this={svg}
+    use:punkteFesthalten
     width={breite}
     height={hoehe}
     role="img"
@@ -216,7 +218,8 @@
 
 <style>
   .flaeche { position: absolute; inset: 0; }
-  svg { display: block; touch-action: none; user-select: none; -webkit-user-select: none; }
+  /* Senkrechtes Wischen scrollt die Seite; Punkte ziehen bleibt möglich (punkteFesthalten). */
+  svg { display: block; touch-action: pan-y; user-select: none; -webkit-user-select: none; }
   .gitter { stroke: var(--linie); stroke-width: 1; }
   .achse { stroke: var(--schrift3); stroke-width: 1.2; }
   .wert { font-size: 14px; fill: var(--schrift2); }
@@ -236,7 +239,7 @@
   .training { fill: var(--flaeche); stroke: var(--schrift); stroke-width: 2.5; }
   .test { fill: var(--flaeche); stroke: var(--frage); stroke-width: 2.5; }
   .ring { fill: none; stroke: var(--schrift); stroke-width: 1.5; stroke-dasharray: 3 3; }
-  .treffer { fill: transparent; cursor: grab; }
+  .treffer { fill: transparent; cursor: grab; touch-action: none; }
   .raute { fill: var(--frage); stroke: var(--flaeche); stroke-width: 1.5; }
   .etikett rect { fill: var(--schrift); }
   .etikett text { fill: #fff; font-size: 14px; font-weight: 600; }
