@@ -64,6 +64,8 @@ test('Teamname landet im Dateinamen und im letzten Stand (FR-08, FR-06)', async 
   await page.getByRole('button', { name: 'Speichern' }).click();
   expect((await download).suggestedFilename()).toMatch(/^ML-Schule Die Pinguine \d{4}-\d\d-\d\d\.json$/);
   await page.reload();
+  await expect(page.getByRole('textbox', { name: 'Teamname' })).toHaveValue('Die Pinguine');
+  await page.getByRole('button', { name: 'Zur Startseite' }).click();
   await expect(page.getByText('Hitzefrei? · Die Pinguine')).toBeVisible();
   await expect(page.getByText('Das ist keine Sicherung')).toBeVisible();
 });

@@ -16,7 +16,6 @@
   const APP_VERSION = __APP_VERSION__;
 
   type Ansicht = 'galerie' | 'arbeit' | 'machbarkeit';
-  let ansicht = $state<Ansicht>('galerie');
   // Höhe der Kopfleiste (eine oder zwei Zeilen, mit Hilfeband) für die Höhe der Arbeitsfläche
   let kopfHoehe = $state(61);
   $effect(() => document.documentElement.style.setProperty('--kopf-hoehe', `${kopfHoehe}px`));
@@ -30,6 +29,24 @@
   const startstand = zwischen.laden();
   if (startstand) inhaltPruefen(startstand);
   let projekt = $state<Projekt | null>(startstand);
+  // Nach dem Neuladen (z. B. Herunterziehen auf dem iPad) bleibt man in der Ansicht, in der man war.
+  // sessionStorage gilt nur für diesen Tab: Ein neuer Start der App beginnt wieder auf der Startseite.
+  const ANSICHT_SCHLUESSEL = 'mlfs-ansicht';
+  const gemerkt = (() => {
+    try {
+      return sessionStorage.getItem(ANSICHT_SCHLUESSEL);
+    } catch {
+      return null;
+    }
+  })();
+  let ansicht = $state<Ansicht>(gemerkt === 'machbarkeit' || (gemerkt === 'arbeit' && startstand) ? gemerkt : 'galerie');
+  $effect(() => {
+    try {
+      sessionStorage.setItem(ANSICHT_SCHLUESSEL, ansicht);
+    } catch {
+      /* privates Surfen: dann eben Startseite */
+    }
+  });
   let stufe = $state<Stufe>(startstand?.stufe ?? einstellungen.stufeLaden() ?? 1);
   let modulId = $state<ModulId>(startstand?.modul ?? 'tabellen');
   const modul = $derived(modulNach(projekt?.modul ?? modulId));

@@ -21,9 +21,19 @@ test('Stufe wechseln und Arbeitsansicht mit Bereichen (FR-03, BK-D)', async ({ p
   await expect(page.getByRole('button', { name: '3D' })).toHaveCount(0);
 });
 
-test('Letzter Stand bleibt nach Neuladen erhalten (FR-06) und Neu beginnen fragt nach (FR-07)', async ({ page }) => {
+test('Letzter Stand bleibt nach Neuladen erhalten (FR-06) und Neu beginnen fragt nach (FR-07)', async ({ page, context }) => {
   await page.goto('./');
   await page.getByRole('button', { name: /Hitzefrei/ }).click();
+  // Neuladen (Herunterziehen auf dem iPad) bleibt im Beispiel
+  await page.reload();
+  await expect(page.getByRole('complementary', { name: 'Bereiche' })).toBeVisible();
+  await expect(page.getByText('Hitzefrei').first()).toBeVisible();
+  // Ein neuer Start der App beginnt auf der Startseite und bietet „Weiterarbeiten“ an
+  const neu = await context.newPage();
+  await neu.goto('./');
+  await expect(neu.getByText('Weiterarbeiten')).toBeVisible();
+  await neu.close();
+  await page.getByRole('button', { name: 'Zur Startseite' }).click();
   await page.reload();
   await expect(page.getByText('Weiterarbeiten')).toBeVisible();
   page.once('dialog', (d) => d.accept());
