@@ -74,7 +74,7 @@
     </div>
   </section>
 
-  <p class="fuss klein leise">Version {version} · Herausgegeben von Andreas Norren</p>
+  <p class="fuss klein leise">Version {version} · Herausgegeben von Andreas Norren · <a href="{import.meta.env.BASE_URL}LIZENZEN.txt" target="_blank" rel="noopener">Lizenzen</a></p>
 </div>
 
 <style>
@@ -92,5 +92,6 @@
   .wahl button { flex: 1; padding: 0 8px; }
   .wahl button.an { background: var(--modell-knopf); border-color: var(--modell-knopf); color: #fff; }
   section p { margin: 8px 0 0; }
+  .fuss a { color: inherit; }
   .fuss { margin: 0; border-top: 1px solid var(--linie); padding-top: 10px; }
 </style>

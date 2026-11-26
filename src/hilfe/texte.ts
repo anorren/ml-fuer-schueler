@@ -81,10 +81,11 @@ export const BEGRIFFE: Record<string, Begriff> = {
 /** Kurzerklärungen der Bedienelemente des Rahmens (FR-09). */
 export const BEDIENUNG = {
   start: 'Zurück zur Startseite mit allen Beispielen.',
-  einstellungen: 'Öffnet die Einstellungen: Stufe und Darstellung (hell oder dunkel). Hier steht auch, welche Stufe gerade gilt.',
+  einstellungen: 'Öffnet die Einstellungen: Stufe und Darstellung (hell oder dunkel).',
+  stufeAnzeige: 'Zeigt, auf welcher Stufe ihr arbeitet. Die Stufe ändert ihr in den Einstellungen (Zahnrad ganz rechts).',
   stufe: 'Wählt, wie viel die App zeigt: 1 das Wichtigste, 2 mehr Werkzeuge, 3 auch Formeln. Eure Arbeit bleibt beim Wechseln erhalten.',
   oeffnen: 'Öffnet eine gespeicherte Projektdatei aus eurem Ordner.',
-  speichern: 'Speichert euer Projekt als Datei für euren Ordner. Darunter steht, ob der letzte Stand schon gesichert ist.',
+  speichern: 'Speichert euer Projekt als Datei für euren Ordner. Ein grüner Haken an der Diskette heißt: Der letzte Stand ist gesichert.',
   neu: 'Setzt die App für die nächste Gruppe zurück. Vorher fragt sie nach, wenn etwas nicht gespeichert ist.',
   hilfe: 'Hilfe an: Tippt auf einen Knopf, und die App erklärt ihn, statt etwas zu tun. Noch einmal tippen schaltet die Hilfe aus.',
   team: 'Gebt eurem Team einen Namen. Ein Fantasiename genügt, bitte keine echten Namen.',

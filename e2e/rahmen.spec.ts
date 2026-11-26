@@ -18,7 +18,7 @@ test('Stufe bleibt ohne Projekt nach Neuladen erhalten (FR-03)', async ({ page }
   await page.goto('./');
   await stufeWaehlen(page, 3);
   await page.reload();
-  await expect(page.getByRole('button', { name: 'Einstellungen, Stufe 3' })).toBeVisible();
+  await expect(page.getByText('Stufe 3', { exact: true })).toBeVisible();
 });
 
 test('Stufe 2 blendet den Reiter 3D ein, Stufe 1 wieder aus (FR-03)', async ({ page }) => {
@@ -81,15 +81,17 @@ test('Hilfemodus erklärt einen Knopf, statt ihn auszulösen (FR-09)', async ({ 
   await page.goto('./');
   await page.getByRole('button', { name: 'Hilfe', exact: false }).first().click();
   await expect(page.getByText('Hilfe an:')).toBeVisible();
-  await page.getByRole('button', { name: 'Einstellungen, Stufe 1' }).click();
+  await page.getByRole('button', { name: 'Einstellungen', exact: true }).click();
   const blase = page.getByRole('tooltip');
   await expect(blase).toContainText('Öffnet die Einstellungen');
   await expect(page.getByRole('dialog', { name: 'Einstellungen' })).toHaveCount(0);
-  await expect(page.getByRole('button', { name: 'Einstellungen, Stufe 1' })).toBeVisible();
+  await expect(page.getByText('Stufe 1', { exact: true })).toBeVisible();
+  // Die Erklärung liegt unter dem Zahnrad über „Hilfe aus“; erst schließen
+  await page.getByRole('button', { name: 'Erklärung schließen' }).click();
   await page.getByRole('button', { name: 'Hilfe aus' }).click();
   await expect(blase).toHaveCount(0);
   await stufeWaehlen(page, 3);
-  await expect(page.getByRole('button', { name: 'Einstellungen, Stufe 3' })).toBeVisible();
+  await expect(page.getByText('Stufe 3', { exact: true })).toBeVisible();
 });
 
 test('„i“ öffnet den Infobereich, Begriffe erklären sich beim Antippen (FR-24)', async ({ page }) => {
@@ -132,12 +134,13 @@ test('Dunkelmodus folgt der Einstellung des Geräts (Apple HIG, H9)', async ({ p
 test('Menü „Einstellungen“: Stufe und Darstellung hell, dunkel, wie das iPad (DEC-16)', async ({ page }) => {
   await page.goto('./');
   await page.getByRole('button', { name: /Schulkiosk/ }).click();
-  const knopf = page.getByRole('button', { name: 'Einstellungen, Stufe 1' });
+  await expect(page.getByText('Stufe 1', { exact: true })).toBeVisible();
+  const knopf = page.getByRole('button', { name: 'Einstellungen', exact: true });
   await knopf.click();
   const menue = page.getByRole('dialog', { name: 'Einstellungen' });
   await expect(menue.getByRole('radio', { name: /^1 / })).toHaveAttribute('aria-checked', 'true');
   await menue.getByRole('radio', { name: /^2 / }).click();
-  await expect(page.getByRole('button', { name: 'Einstellungen, Stufe 2' })).toBeVisible();
+  await expect(page.getByText('Stufe 2', { exact: true })).toBeVisible();
   // Darstellung unabhängig vom System
   await page.emulateMedia({ colorScheme: 'light' });
   await menue.getByRole('radio', { name: 'Dunkel' }).click();
@@ -147,7 +150,7 @@ test('Menü „Einstellungen“: Stufe und Darstellung hell, dunkel, wie das iPa
   await expect(menue).toHaveCount(0);
   await page.reload();
   await expect(page.locator('html')).toHaveAttribute('data-thema', 'dunkel');
-  await page.getByRole('button', { name: /^Einstellungen, Stufe/ }).click();
+  await page.getByRole('button', { name: 'Einstellungen', exact: true }).click();
   await page.getByRole('dialog', { name: 'Einstellungen' }).getByRole('radio', { name: 'Wie das iPad' }).click();
   await expect(page.locator('html')).toHaveAttribute('data-thema', 'hell');
   await page.emulateMedia({ colorScheme: 'dark' });

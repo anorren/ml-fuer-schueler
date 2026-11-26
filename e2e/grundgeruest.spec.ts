@@ -5,7 +5,7 @@ test('Start ohne Anmeldung zeigt Galerie, Stufen und Module (FR-01, FR-02)', asy
   await page.goto('./');
   await expect(page.getByRole('heading', { name: 'Neues Projekt' })).toBeVisible();
   await expect(page.getByRole('tab', { name: /Lernen aus Tabellen/ })).toHaveAttribute('aria-selected', 'true');
-  await expect(page.getByRole('button', { name: 'Einstellungen, Stufe 1' })).toBeVisible();
+  await expect(page.getByText('Stufe 1', { exact: true })).toBeVisible();
   await expect(page.getByText('Herausgegeben von Andreas Norren')).toBeVisible();
 });
 
@@ -55,7 +55,7 @@ test('Projektdatei speichern und wieder öffnen (FR-04, FR-05)', async ({ page }
   await page.getByRole('button', { name: 'Neu beginnen' }).click();
   await page.locator('input[type=file]').setInputFiles(datei!);
   await expect(page.getByText('Projekt geöffnet.')).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Einstellungen, Stufe 3' })).toBeVisible();
+  await expect(page.getByText('Stufe 3', { exact: true })).toBeVisible();
 });
 
 test('Machbarkeitstest zeigt Gerätedaten und 3D-Fläche', async ({ page }) => {

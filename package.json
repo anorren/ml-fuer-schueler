@@ -1,7 +1,7 @@
 {
   "name": "ml-fuer-schueler",
   "private": true,
-  "version": "0.10.0",
+  "version": "0.11.0",
   "description": "Praxis-App zum Informatikunterricht der Sekundarstufe I: maschinelles Lernen ohne Konto, offline, für Klassen-iPads. Herausgegeben von Andreas Norren.",
   "type": "module",
   "scripts": {
@@ -22,5 +22,8 @@
     "vite": "^7.2.0",
     "vite-plugin-pwa": "^1.1.0",
     "vitest": "^4.0.0"
+  },
+  "dependencies": {
+    "@lucide/svelte": "1.81.0"
   }
 }
