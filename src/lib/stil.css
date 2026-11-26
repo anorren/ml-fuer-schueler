@@ -9,9 +9,18 @@
   --linie: #e1e0d9;
   --modell: #2670cc;
   --modell-hell: #e6effb;
+  /* Blau als Fläche mit weißer Schrift (Knöpfe); im Dunkelmodus bleibt es dunkel genug für weiße Schrift */
+  --modell-knopf: #2670cc;
+  /* Dunkles Blau für Text auf hellblauem Grund und für die Klassengrenze */
+  --modell-text: #174a8c;
+  --grenze: #174a8c;
+  --modell-schraffur: #b9cfee;
   --frage: #d9700b;
   --frage-text: #a85400;
   --frage-hell: #fdeedd;
+  /* Orange als Fläche mit weißer Schrift */
+  --frage-knopf: #a85400;
+  --auf-dunkel: #ffffff;
   --status-gut: #1b7a43;
   --status-achtung: #c93a3a;
   --radius-karte: 12px;
@@ -19,6 +28,33 @@
   --schatten: 0 1px 2px rgba(0, 0, 0, 0.06);
   --tippflaeche: 44px;
   --schriftart: -apple-system, 'Helvetica Neue', Helvetica, sans-serif;
+  color-scheme: light dark;
+}
+
+/* Dunkelmodus (Apple HIG, H9): folgt der Einstellung des Geräts. Kontraste nach WCAG AA geprüft,
+   Farbbedeutung bleibt: Blau = Modell, Orange = Frage. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --hintergrund: #161618;
+    --flaeche: #232325;
+    --schrift: #f2f2f0;
+    --schrift2: #c2c0ba;
+    --schrift3: #9d9a93;
+    --linie: #3a3a3d;
+    --modell: #5c9ded;
+    --modell-hell: #1d3352;
+    --modell-knopf: #2670cc;
+    --modell-text: #b8d4ff;
+    --grenze: #9cc4ff;
+    --modell-schraffur: #3a5a85;
+    --frage: #f0902a;
+    --frage-text: #ffb366;
+    --frage-hell: #4a3216;
+    --frage-knopf: #a85400;
+    --status-gut: #4cc27e;
+    --status-achtung: #ff7a7a;
+    --schatten: 0 1px 2px rgba(0, 0, 0, 0.4);
+  }
 }
 
 * { box-sizing: border-box; }
@@ -46,7 +82,7 @@ button, .knopf {
   cursor: pointer; white-space: nowrap;
 }
 button:disabled { opacity: 0.45; cursor: default; }
-button.haupt { background: var(--modell); border-color: var(--modell); color: #fff; }
+button.haupt { background: var(--modell-knopf); border-color: var(--modell-knopf); color: #fff; }
 button.frage { background: var(--frage-hell); border-color: var(--frage-hell); }
 button:focus-visible { outline: 3px solid var(--modell); outline-offset: 2px; }
 

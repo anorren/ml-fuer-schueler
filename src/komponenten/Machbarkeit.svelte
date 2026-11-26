@@ -68,5 +68,5 @@
   th { text-align: left; font-weight: 600; color: var(--schrift2); padding: 4px 16px 4px 0; vertical-align: top; }
   td { padding: 4px 0; }
   ol { margin: 0; padding-left: 20px; }
-  .zeile { display: flex; gap: 10px; flex-wrap: wrap; }
+  .zeile { display: flex; gap: 12px; flex-wrap: wrap; }
 </style>

@@ -360,7 +360,7 @@
       <div class="zeilen">
         {#if tipp}<Tipp text={tipp} onWeg={onTippWeg} />{/if}
         {#if ansicht3d}
-          <p class="hinweis klein">Die Fläche zeigt für jeden Schuss, wie <Begriff id="wahrscheinlichkeit" text="wahrscheinlich" /> „{klassen[1]}“ ist; die dunkle Linie liegt bei 50 %. Dreht mit einem Finger, zoomt mit zwei.
+          <p class="hinweis klein">Die Fläche zeigt für jeden Schuss, wie <Begriff id="wahrscheinlichkeit" text="wahrscheinlich" /> „{klassen[1]}“ ist; die Grenzlinie liegt bei 50 %. Dreht mit einem Finger, zoomt mit zwei.
             <button onclick={() => blick?.zuruecksetzen()}>Ansicht zurücksetzen</button></p>
         {:else if hinweis}
           <p class="hinweis klein" class:frage={tippModus === 'vorhersage'}>{hinweis}</p>
@@ -413,7 +413,7 @@
         {#if art === 'netz'}
           <p>Das <Begriff id="modell" /> ist ein kleines <Begriff id="netz" />. Seine <Begriff id="neuron" text="Neuronen" /> biegen die Linie, so kann es auch Kurven lernen.</p>
         {:else if zwei && art === 'skurve'}
-          <p>Das <Begriff id="modell" /> ist eine <Begriff id="skurve" /> über beide Eingaben. Ab 50 % <Begriff id="wahrscheinlichkeit" /> sagt es „{klassen[1]}“; die dunkle Linie in der Draufsicht ist die <Begriff id="klassengrenze" text="Grenze" />.</p>
+          <p>Das <Begriff id="modell" /> ist eine <Begriff id="skurve" /> über beide Eingaben. Ab 50 % <Begriff id="wahrscheinlichkeit" /> sagt es „{klassen[1]}“; die Grenzlinie in der Draufsicht ist die <Begriff id="klassengrenze" text="Grenze" />.</p>
         {:else if zwei}
           <p>Das <Begriff id="modell" /> ist eine schräge Ebene über beiden Eingaben. Wo sie über 50 % liegt, sagt es „{klassen[1]}“.</p>
         {:else if art === 'skurve'}
@@ -447,7 +447,7 @@
               {#each ebene.steigungen as st, k}{k ? (st < 0 ? ' − ' : ' + ') : st < 0 ? '−' : ''}<span class="w">{zahl(Math.abs(st), 3)}</span> · {i.merkmale[k].name}{/each}
               {mitVorzeichen(ebene.achsenabschnitt, 2)}
             </p>
-            {#if art === 'skurve'}<p class="klein leise">p({klassen[1]}) = 1 / (1 + e<sup>−z</sup>). Bei z = 0 ist p = 50 %: Dort liegt die dunkle <Begriff id="klassengrenze" text="Grenze" />, eine gerade Linie in der Draufsicht.</p>
+            {#if art === 'skurve'}<p class="klein leise">p({klassen[1]}) = 1 / (1 + e<sup>−z</sup>). Bei z = 0 ist p = 50 %: Dort liegt die <Begriff id="klassengrenze" text="Grenzlinie" />, eine gerade Linie in der Draufsicht.</p>
             {:else}<p class="klein leise">Wo die Ebene den Wert 0,5 hat, liegt die <Begriff id="klassengrenze" text="Grenze" />, eine gerade Linie in der Draufsicht.</p>{/if}
           {:else if art === 'gerade'}
             <p class="formel">{ZIEL} = <span class="w">{zahl(gerade.steigung, klasse ? 3 : 2)}</span> · {MERKMAL} {mitVorzeichen(gerade.achsenabschnitt, klasse ? 2 : 1)}</p>
@@ -555,12 +555,12 @@
   .bild { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
   .bildkopf { display: flex; align-items: flex-start; gap: 12px; padding: 10px 12px 0 14px; }
   .links { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
-  .knoepfe { display: flex; gap: 8px; }
+  .knoepfe { display: flex; gap: 12px; }
   .vergroessern { padding: 0 12px; }
   .reiter { display: inline-flex; align-self: flex-start; border: 1px solid var(--linie); border-radius: var(--radius-knopf); overflow: hidden; }
   .reiter button { border: 0; border-radius: 0; }
   .reiter button + button { border-left: 1px solid var(--linie); }
-  .reiter button[aria-pressed='true'] { background: var(--modell-hell); color: #174a8c; }
+  .reiter button[aria-pressed='true'] { background: var(--modell-hell); color: var(--modell-text); }
   .plot { position: relative; flex: 1; min-height: 0; margin: 0 6px; }
   .zeilen { display: flex; flex-direction: column; gap: 6px; padding: 0 12px 10px; }
   .hinweis { margin: 0; padding: 6px 12px; border-radius: var(--radius-knopf); background: var(--hintergrund); border-left: 4px solid var(--schrift3); color: var(--schrift2); }
@@ -571,15 +571,15 @@
   .legende i { display: inline-block; }
   .kreis { width: 11px; height: 11px; border: 2px solid var(--schrift); border-radius: 50%; }
   .kreis.voll { background: var(--schrift); }
-  .schraffur { width: 16px; height: 12px; border: 1px solid var(--modell); background: repeating-linear-gradient(45deg, var(--modell-hell) 0 3px, #b9cfee 3px 4.5px); }
+  .schraffur { width: 16px; height: 12px; border: 1px solid var(--modell); background: repeating-linear-gradient(45deg, var(--modell-hell) 0 3px, var(--modell-schraffur) 3px 4.5px); }
   .quadrat { width: 11px; height: 11px; border: 2px solid var(--frage); }
   .strich { width: 16px; height: 3px; background: var(--modell); border-radius: 2px; }
-  .strich.dunkel { background: var(--grenze, #174a8c); }
+  .strich.dunkel { background: var(--grenze); }
   .verlauf { width: 16px; height: 12px; background: linear-gradient(90deg, var(--modell-hell), var(--modell)); border: 1px solid var(--modell); }
   .klein-wahl button { padding: 0 14px; }
   .raute { width: 9px; height: 9px; background: var(--frage); transform: rotate(45deg); }
   p { margin: 0; }
-  .zeile { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .zeile { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
   .raum { flex: 1; }
   .tabellenbox { min-height: 0; }
   .frage input { font: inherit; width: 90px; min-height: 40px; padding: 0 10px; border: 1px solid var(--linie); border-radius: var(--radius-knopf); }
@@ -593,9 +593,9 @@
   .rechenweg { display: flex; flex-direction: column; gap: 4px; padding: 10px 12px; border: 1px solid var(--linie); border-radius: var(--radius-knopf); background: var(--hintergrund); font-variant-numeric: tabular-nums; font-size: 14px; }
   .bruch { font-size: 13px; }
   .formel .bruch { font-size: inherit; }
-  .wahl { display: flex; gap: 8px; }
+  .wahl { display: flex; gap: 12px; }
   .wahl button { flex: 1; }
-  .wahl button[aria-pressed='true'] { background: var(--modell); border-color: var(--modell); color: #fff; }
+  .wahl button[aria-pressed='true'] { background: var(--modell-knopf); border-color: var(--modell-knopf); color: #fff; }
   .neuronen input { flex: 1; min-width: 120px; accent-color: var(--modell); min-height: 36px; }
   .gewichte { border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
   .gewichte th, .gewichte td { padding: 2px 10px 2px 0; text-align: right; }

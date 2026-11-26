@@ -4,7 +4,7 @@
   import { achsenwerte, hoehenlinie, raster, wahrscheinlichkeit, zahl } from './rechnen';
 
   // Draufsicht bei zwei Merkmalen (FR-20): Achsen = Merkmale, Punkte nach Klasse (gefüllt = „ja“, leer = „nein“),
-  // Bereich „ja“ blau schraffiert, Grenze bei 50 % als dunkle Linie. Punkte antippen, ziehen, setzen (FR-11).
+  // Bereich „ja“ blau schraffiert, Grenze bei 50 % als kräftige Linie. Punkte antippen, ziehen, setzen (FR-11).
   interface Props {
     i: TabellenInhalt;
     modus: 'daten' | 'vorhersage' | null;
@@ -199,7 +199,7 @@
   .achsentitel { font-size: 15px; font-weight: 600; fill: var(--schrift); }
   .ja-grund { fill: var(--modell-hell); }
   .ja-strich { stroke: var(--modell); stroke-width: 1.2; opacity: 0.35; }
-  .grenze { fill: none; stroke: var(--grenze, #174a8c); stroke-width: 3.5; stroke-linecap: round; stroke-linejoin: round; }
+  .grenze { fill: none; stroke: var(--grenze); stroke-width: 3.5; stroke-linecap: round; stroke-linejoin: round; }
   .training { fill: var(--flaeche); stroke: var(--schrift); stroke-width: 2.5; }
   .training.ja { fill: var(--schrift); }
   .test { fill: var(--flaeche); stroke: var(--frage); stroke-width: 2.5; }
@@ -208,6 +208,6 @@
   .treffer { fill: transparent; cursor: grab; touch-action: none; }
   .raute { fill: var(--frage); stroke: var(--flaeche); stroke-width: 1.5; }
   .etikett rect { fill: var(--schrift); }
-  .etikett text { fill: #fff; font-size: 14px; font-weight: 600; }
+  .etikett text { fill: var(--flaeche); font-size: 14px; font-weight: 600; }
   svg.setzen { cursor: crosshair; }
 </style>

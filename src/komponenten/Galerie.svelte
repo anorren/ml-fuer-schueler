@@ -76,9 +76,9 @@
   .kopf { display: flex; align-items: center; }
   .raum { flex: 1; }
   .weiter { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 18px; margin-top: 16px; }
-  .module { display: flex; gap: 10px; margin: 16px 0 20px; flex-wrap: wrap; }
+  .module { display: flex; gap: 12px; margin: 16px 0 20px; flex-wrap: wrap; }
   .module button { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 1px; padding: 6px 14px; text-align: left; }
-  .module button.an { background: var(--modell); border-color: var(--modell); color: #fff; }
+  .module button.an { background: var(--modell-knopf); border-color: var(--modell-knopf); color: #fff; }
   .module button:disabled { opacity: 0.6; }
   .name { font-weight: 600; }
   .lehrplan { font-size: 13px; }

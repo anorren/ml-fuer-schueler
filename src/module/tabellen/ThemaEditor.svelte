@@ -123,17 +123,17 @@
   .schliessen { min-width: 40px; padding: 0; border: 0; background: none; }
   fieldset { border: 1px solid var(--linie); border-radius: var(--radius-knopf); padding: 8px 12px 12px; margin: 0; }
   legend { font-weight: 600; padding: 0 4px; }
-  .zeile { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .zeile { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
   .raum { flex: 1; }
-  .spalte { display: flex; gap: 10px; flex-wrap: wrap; }
+  .spalte { display: flex; gap: 12px; flex-wrap: wrap; }
   .feld { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--schrift2); flex: 1; min-width: 150px; }
   .feld.kurz { flex: 0 0 90px; min-width: 0; }
   .feld.breit input { max-width: 360px; }
   .feld input { font: inherit; font-size: 16px; color: var(--schrift); min-height: 40px; padding: 0 10px; border: 1px solid var(--linie); border-radius: var(--radius-knopf); background: var(--flaeche); }
   .feld input:focus { outline: 3px solid var(--modell); outline-offset: 1px; }
-  .wahl { display: flex; gap: 8px; }
+  .wahl { display: flex; gap: 12px; }
   .wahl button { flex: 1; }
-  .wahl button[aria-pressed='true'] { background: var(--modell); border-color: var(--modell); color: #fff; }
+  .wahl button[aria-pressed='true'] { background: var(--modell-knopf); border-color: var(--modell-knopf); color: #fff; }
   .hinweis { margin: 0; padding: 10px 12px; border-radius: var(--radius-knopf); background: var(--hintergrund); border-left: 4px solid var(--schrift2); }
   .fehlerliste { margin: 0; padding: 8px 12px 8px 30px; list-style: disc; border-radius: var(--radius-knopf); background: var(--hintergrund); border-left: 4px solid var(--status-achtung); color: var(--schrift); }
   .fuss { border-top: 1px solid var(--linie); padding-top: 12px; }

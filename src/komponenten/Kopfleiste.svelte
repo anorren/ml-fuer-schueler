@@ -68,7 +68,7 @@
 {/if}
 
 <style>
-  .leiste { display: flex; align-items: center; gap: 10px; padding: 8px 16px; background: var(--flaeche); border-bottom: 1px solid var(--linie); flex-wrap: wrap; }
+  .leiste { display: flex; align-items: center; gap: 12px; padding: 8px 16px; background: var(--flaeche); border-bottom: 1px solid var(--linie); flex-wrap: wrap; }
   .app { border: 0; padding: 0; font-weight: 700; font-size: 16px; background: none; min-height: var(--tippflaeche); }
   /* Der Szenariotitel nimmt den freien Platz und kürzt sich mit „…“, statt die Leiste umbrechen zu lassen. */
   .titel { text-transform: none; flex: 1 1 0; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -79,7 +79,7 @@
   .stufen { display: flex; border: 1px solid var(--linie); border-radius: var(--radius-knopf); overflow: hidden; }
   .stufen button { border: 0; border-right: 1px solid var(--linie); border-radius: 0; min-width: 44px; }
   .stufen button:last-child { border-right: 0; }
-  .stufen button.an { background: var(--modell); color: #fff; }
+  .stufen button.an { background: var(--modell-knopf); color: #fff; }
   .speichern { display: inline-flex; flex-direction: column; justify-content: center; line-height: 1.15; }
   .zustand { font-size: 12px; }
   /* Hilfe nie in Blau oder Orange (Designentwurf, Hilfe nach unten) */

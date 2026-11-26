@@ -114,3 +114,15 @@ test('Nach zehn Minuten ohne Speichern erscheint ein wegtippbarer Tipp (FR-24)',
   await page.getByRole('button', { name: 'Tipp schließen' }).click();
   await expect(page.getByText('länger nicht gespeichert')).toHaveCount(0);
 });
+
+test('Dunkelmodus folgt der Einstellung des Geräts (Apple HIG, H9)', async ({ page }) => {
+  await page.emulateMedia({ colorScheme: 'dark' });
+  await page.goto('./');
+  await page.getByRole('button', { name: /Schulkiosk/ }).click();
+  const hintergrund = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
+  expect(hintergrund).toBe('rgb(22, 22, 24)');
+  // Knöpfe behalten ein Blau, auf dem weiße Schrift lesbar bleibt
+  await expect(page.getByRole('button', { name: /Trainieren/ })).toHaveCSS('background-color', 'rgb(38, 112, 204)');
+  await page.emulateMedia({ colorScheme: 'light' });
+  expect(await page.evaluate(() => getComputedStyle(document.body).backgroundColor)).toBe('rgb(249, 249, 247)');
+});

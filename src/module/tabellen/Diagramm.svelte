@@ -242,6 +242,6 @@
   .treffer { fill: transparent; cursor: grab; touch-action: none; }
   .raute { fill: var(--frage); stroke: var(--flaeche); stroke-width: 1.5; }
   .etikett rect { fill: var(--schrift); }
-  .etikett text { fill: #fff; font-size: 14px; font-weight: 600; }
+  .etikett text { fill: var(--flaeche); font-size: 14px; font-weight: 600; }
   svg.setzen { cursor: crosshair; }
 </style>

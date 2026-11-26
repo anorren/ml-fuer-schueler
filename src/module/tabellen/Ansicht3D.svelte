@@ -24,12 +24,19 @@
   let breite = $state(800);
   let hoehe = $state(500);
   let canvas: HTMLCanvasElement;
-  let farben = { modell: '#2670cc', hell: '#e6effb', schrift: '#1f2328', schrift2: '#59636e', linie: '#d8dee4', frage: '#d9700b', flaeche: '#ffffff' };
+  let farben = $state({ modell: '#2670cc', hell: '#e6effb', schrift: '#1f2328', schrift2: '#59636e', linie: '#d8dee4', frage: '#d9700b', flaeche: '#ffffff', grenze: '#174a8c' });
 
   onMount(() => {
-    const s = getComputedStyle(canvas);
-    const v = (n: string, alt: string) => s.getPropertyValue(n).trim() || alt;
-    farben = { modell: v('--modell', farben.modell), hell: v('--modell-hell', farben.hell), schrift: v('--schrift', farben.schrift), schrift2: v('--schrift2', farben.schrift2), linie: v('--linie', farben.linie), frage: v('--frage', farben.frage), flaeche: v('--flaeche', farben.flaeche) };
+    const lesen = () => {
+      const s = getComputedStyle(canvas);
+      const v = (n: string, alt: string) => s.getPropertyValue(n).trim() || alt;
+      farben = { modell: v('--modell', farben.modell), hell: v('--modell-hell', farben.hell), schrift: v('--schrift', farben.schrift), schrift2: v('--schrift2', farben.schrift2), linie: v('--linie', farben.linie), frage: v('--frage', farben.frage), flaeche: v('--flaeche', farben.flaeche), grenze: v('--grenze', farben.grenze) };
+    };
+    lesen();
+    // Hell/dunkel kann sich während der Arbeit ändern (Dunkelmodus, H9)
+    const m = matchMedia('(prefers-color-scheme: dark)');
+    m.addEventListener('change', lesen);
+    return () => m.removeEventListener('change', lesen);
   });
 
   const N_FLAECHE = 24;
@@ -116,9 +123,11 @@
             c.fillStyle = mischen(mittel);
             c.fill();
             c.globalAlpha = 1;
-            c.strokeStyle = 'rgba(42, 120, 214, 0.35)';
+            c.strokeStyle = farben.modell;
+            c.globalAlpha = 0.35;
             c.lineWidth = 0.8;
             c.stroke();
+            c.globalAlpha = 1;
           }
         });
       }
@@ -129,7 +138,7 @@
       teile.push({
         tiefe: (qa.tiefe + qb.tiefe) / 2 - 0.02,
         malen: (c) => {
-          c.strokeStyle = '#174a8c';
+          c.strokeStyle = farben.grenze;
           c.lineWidth = 3.5;
           c.lineCap = 'round';
           c.beginPath();
@@ -265,7 +274,7 @@
   }
 </script>
 
-<div class="flaeche" bind:clientWidth={breite} bind:clientHeight={hoehe} role="img" aria-label="3D-Ansicht: Wahrscheinlichkeit für „{klassen[1]}“ über {i.merkmale[0].name} und {i.merkmale[1].name}. Dunkle Linie bei 50 %.">
+<div class="flaeche" bind:clientWidth={breite} bind:clientHeight={hoehe} role="img" aria-label="3D-Ansicht: Wahrscheinlichkeit für „{klassen[1]}“ über {i.merkmale[0].name} und {i.merkmale[1].name}. Grenzlinie bei 50 %.">
   <canvas
     bind:this={canvas}
     style="width: {breite}px; height: {hoehe}px"
