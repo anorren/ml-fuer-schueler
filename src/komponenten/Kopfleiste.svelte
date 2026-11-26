@@ -1,5 +1,7 @@
 <script lang="ts">
   import type { Stufe } from '../lib/projekt';
+  import type { Darstellung } from '../lib/darstellung';
+  import Einstellungen from './Einstellungen.svelte';
   import { erklaert, hilfe, schliesseBlase } from '../hilfe/hilfe.svelte';
   import { BEDIENUNG } from '../hilfe/texte';
 
@@ -12,13 +14,16 @@
     team?: string;
     onTeam: (name: string) => void;
     onStufe: (s: Stufe) => void;
+    darstellung: Darstellung;
+    onDarstellung: (d: Darstellung) => void;
+    version: string;
     onOeffnen: () => void;
     onSpeichern: () => void;
     onNeu: () => void;
     onStart: () => void;
   }
-  let { stufe, gesichert, online, titel, team, onTeam, onStufe, onOeffnen, onSpeichern, onNeu, onStart }: Props = $props();
-  const stufen: Stufe[] = [1, 2, 3];
+  let { stufe, gesichert, online, titel, team, onTeam, onStufe, darstellung, onDarstellung, version, onOeffnen, onSpeichern, onNeu, onStart }: Props = $props();
+  let menueOffen = $state(false);
 
   function hilfeUmschalten() {
     hilfe.modus = !hilfe.modus;
@@ -46,12 +51,14 @@
   {/if}
   <span class="raum"></span>
   {#if !online}<span class="klein leise" title="Die App läuft ohne Internet weiter.">offline</span>{/if}
-  <span class="label">Stufe</span>
-  <div class="stufen" role="radiogroup" aria-label="Stufe">
-    {#each stufen as s}
-      <button role="radio" aria-checked={stufe === s} class:an={stufe === s} onclick={() => onStufe(s)} use:erklaert={BEDIENUNG.stufe}>{s}</button>
-    {/each}
-  </div>
+  <button
+    class="einstellungsknopf"
+    aria-label="Einstellungen, Stufe {stufe}"
+    aria-haspopup="dialog"
+    aria-expanded={menueOffen}
+    onclick={() => (menueOffen = !menueOffen)}
+    use:erklaert={BEDIENUNG.einstellungen}
+  ><span class="zahnrad" aria-hidden="true">⚙&#xFE0E;</span> Stufe {stufe}</button>
   <button onclick={onOeffnen} use:erklaert={BEDIENUNG.oeffnen}>Öffnen</button>
   <button class="speichern" onclick={onSpeichern} use:erklaert={BEDIENUNG.speichern}>
     <span>Speichern</span>
@@ -60,6 +67,9 @@
   <button onclick={onNeu} use:erklaert={BEDIENUNG.neu}>Neu beginnen</button>
   <button class="hilfeknopf" aria-pressed={hilfe.modus} data-hilfe-frei title={BEDIENUNG.hilfe} onclick={hilfeUmschalten}>? Hilfe</button>
 </header>
+{#if menueOffen}
+  <Einstellungen {stufe} {darstellung} {version} {onStufe} {onDarstellung} onSchliessen={() => (menueOffen = false)} />
+{/if}
 {#if hilfe.modus}
   <div class="hilfeband klein" role="status">
     <span><strong>Hilfe an:</strong> Tippt auf einen Knopf oder ein Feld, und die App erklärt es, statt etwas zu tun.</span>
@@ -76,10 +86,9 @@
   .team { font: inherit; font-size: 14px; min-height: 44px; width: 160px; padding: 0 10px; border: 1px solid var(--linie); border-radius: var(--radius-knopf); background: var(--hintergrund); color: var(--schrift); }
   .team:focus { outline: 3px solid var(--modell); outline-offset: 1px; background: var(--flaeche); }
   .raum { flex: 1; }
-  .stufen { display: flex; border: 1px solid var(--linie); border-radius: var(--radius-knopf); overflow: hidden; }
-  .stufen button { border: 0; border-right: 1px solid var(--linie); border-radius: 0; min-width: 44px; }
-  .stufen button:last-child { border-right: 0; }
-  .stufen button.an { background: var(--modell-knopf); color: #fff; }
+  .einstellungsknopf { display: inline-flex; align-items: center; gap: 6px; }
+  .einstellungsknopf[aria-expanded='true'] { background: var(--modell-hell); border-color: var(--modell-knopf); color: var(--modell-text); }
+  .zahnrad { font-size: 20px; line-height: 1; }
   .speichern { display: inline-flex; flex-direction: column; justify-content: center; line-height: 1.15; }
   .zustand { font-size: 12px; }
   /* Hilfe nie in Blau oder Orange (Designentwurf, Hilfe nach unten) */

@@ -1,10 +1,11 @@
 import { expect, test } from '@playwright/test';
+import { stufeWaehlen } from './hilfe';
 
 test('Start ohne Anmeldung zeigt Galerie, Stufen und Module (FR-01, FR-02)', async ({ page }) => {
   await page.goto('./');
   await expect(page.getByRole('heading', { name: 'Neues Projekt' })).toBeVisible();
   await expect(page.getByRole('tab', { name: /Lernen aus Tabellen/ })).toHaveAttribute('aria-selected', 'true');
-  await expect(page.getByRole('radio', { name: '1' })).toHaveAttribute('aria-checked', 'true');
+  await expect(page.getByRole('button', { name: 'Einstellungen, Stufe 1' })).toBeVisible();
   await expect(page.getByText('Herausgegeben von Andreas Norren')).toBeVisible();
 });
 
@@ -15,7 +16,7 @@ test('Stufe wechseln und Arbeitsansicht mit Bereichen (FR-03, BK-D)', async ({ p
   for (const b of ['Daten', 'Modell', 'Training', 'Vorhersage']) await expect(page.getByRole('button', { name: b, exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: /Trainieren/ })).toBeVisible();
   await expect(page.getByRole('button', { name: '3D' })).toHaveCount(0);
-  await page.getByRole('radio', { name: '2' }).click();
+  await stufeWaehlen(page, 2);
   await expect(page.getByRole('button', { name: 'Daten', exact: true })).toHaveAttribute('aria-expanded', 'false');
   // 3D nur bei zwei Eingaben (FR-21)
   await expect(page.getByRole('button', { name: '3D' })).toHaveCount(0);
@@ -46,7 +47,7 @@ test('Projektdatei speichern und wieder öffnen (FR-04, FR-05)', async ({ page }
   await page.addInitScript(() => Object.defineProperty(navigator, 'canShare', { value: () => false }));
   await page.goto('./');
   await page.getByRole('button', { name: /Torschuss/ }).click();
-  await page.getByRole('radio', { name: '3' }).click();
+  await stufeWaehlen(page, 3);
   const download = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Speichern' }).click();
   const datei = await (await download).path();
@@ -54,7 +55,7 @@ test('Projektdatei speichern und wieder öffnen (FR-04, FR-05)', async ({ page }
   await page.getByRole('button', { name: 'Neu beginnen' }).click();
   await page.locator('input[type=file]').setInputFiles(datei!);
   await expect(page.getByText('Projekt geöffnet.')).toBeVisible();
-  await expect(page.getByRole('radio', { name: '3' })).toHaveAttribute('aria-checked', 'true');
+  await expect(page.getByRole('button', { name: 'Einstellungen, Stufe 3' })).toBeVisible();
 });
 
 test('Machbarkeitstest zeigt Gerätedaten und 3D-Fläche', async ({ page }) => {

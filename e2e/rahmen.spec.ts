@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { stufeWaehlen } from './hilfe';
 
 // Etappe 1 · Rahmen: FR-02, FR-03, FR-06, FR-08, FR-09, FR-24
 
@@ -15,19 +16,19 @@ test('Module als Reiter mit Lehrplanbereich, ohne Nummern (FR-02)', async ({ pag
 
 test('Stufe bleibt ohne Projekt nach Neuladen erhalten (FR-03)', async ({ page }) => {
   await page.goto('./');
-  await page.getByRole('radio', { name: '3' }).click();
+  await stufeWaehlen(page, 3);
   await page.reload();
-  await expect(page.getByRole('radio', { name: '3' })).toHaveAttribute('aria-checked', 'true');
+  await expect(page.getByRole('button', { name: 'Einstellungen, Stufe 3' })).toBeVisible();
 });
 
 test('Stufe 2 blendet den Reiter 3D ein, Stufe 1 wieder aus (FR-03)', async ({ page }) => {
   await page.goto('./');
   await page.getByRole('button', { name: /Torschuss/ }).click();
   await expect(page.getByRole('button', { name: '3D' })).toHaveCount(0);
-  await page.getByRole('radio', { name: '2' }).click();
+  await stufeWaehlen(page, 2);
   await expect(page.getByRole('button', { name: '3D' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Draufsicht' })).toHaveAttribute('aria-pressed', 'true');
-  await page.getByRole('radio', { name: '1' }).click();
+  await stufeWaehlen(page, 1);
   await expect(page.getByRole('button', { name: '3D' })).toHaveCount(0);
 });
 
@@ -80,14 +81,15 @@ test('Hilfemodus erklärt einen Knopf, statt ihn auszulösen (FR-09)', async ({ 
   await page.goto('./');
   await page.getByRole('button', { name: 'Hilfe', exact: false }).first().click();
   await expect(page.getByText('Hilfe an:')).toBeVisible();
-  await page.getByRole('radio', { name: '3' }).click();
+  await page.getByRole('button', { name: 'Einstellungen, Stufe 1' }).click();
   const blase = page.getByRole('tooltip');
-  await expect(blase).toContainText('Wählt, wie viel die App zeigt');
-  await expect(page.getByRole('radio', { name: '1' })).toHaveAttribute('aria-checked', 'true');
+  await expect(blase).toContainText('Öffnet die Einstellungen');
+  await expect(page.getByRole('dialog', { name: 'Einstellungen' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Einstellungen, Stufe 1' })).toBeVisible();
   await page.getByRole('button', { name: 'Hilfe aus' }).click();
   await expect(blase).toHaveCount(0);
-  await page.getByRole('radio', { name: '3' }).click();
-  await expect(page.getByRole('radio', { name: '3' })).toHaveAttribute('aria-checked', 'true');
+  await stufeWaehlen(page, 3);
+  await expect(page.getByRole('button', { name: 'Einstellungen, Stufe 3' })).toBeVisible();
 });
 
 test('„i“ öffnet den Infobereich, Begriffe erklären sich beim Antippen (FR-24)', async ({ page }) => {
@@ -124,5 +126,32 @@ test('Dunkelmodus folgt der Einstellung des Geräts (Apple HIG, H9)', async ({ p
   // Knöpfe behalten ein Blau, auf dem weiße Schrift lesbar bleibt
   await expect(page.getByRole('button', { name: /Trainieren/ })).toHaveCSS('background-color', 'rgb(38, 112, 204)');
   await page.emulateMedia({ colorScheme: 'light' });
-  expect(await page.evaluate(() => getComputedStyle(document.body).backgroundColor)).toBe('rgb(249, 249, 247)');
+  await expect(page.locator('body')).toHaveCSS('background-color', 'rgb(249, 249, 247)');
+});
+
+test('Menü „Einstellungen“: Stufe und Darstellung hell, dunkel, wie das iPad (DEC-16)', async ({ page }) => {
+  await page.goto('./');
+  await page.getByRole('button', { name: /Schulkiosk/ }).click();
+  const knopf = page.getByRole('button', { name: 'Einstellungen, Stufe 1' });
+  await knopf.click();
+  const menue = page.getByRole('dialog', { name: 'Einstellungen' });
+  await expect(menue.getByRole('radio', { name: /^1 / })).toHaveAttribute('aria-checked', 'true');
+  await menue.getByRole('radio', { name: /^2 / }).click();
+  await expect(page.getByRole('button', { name: 'Einstellungen, Stufe 2' })).toBeVisible();
+  // Darstellung unabhängig vom System
+  await page.emulateMedia({ colorScheme: 'light' });
+  await menue.getByRole('radio', { name: 'Dunkel' }).click();
+  await expect(page.locator('html')).toHaveAttribute('data-thema', 'dunkel');
+  // Antippen außerhalb schließt das Menü
+  await page.mouse.click(300, 400);
+  await expect(menue).toHaveCount(0);
+  await page.reload();
+  await expect(page.locator('html')).toHaveAttribute('data-thema', 'dunkel');
+  await page.getByRole('button', { name: /^Einstellungen, Stufe/ }).click();
+  await page.getByRole('dialog', { name: 'Einstellungen' }).getByRole('radio', { name: 'Wie das iPad' }).click();
+  await expect(page.locator('html')).toHaveAttribute('data-thema', 'hell');
+  await page.emulateMedia({ colorScheme: 'dark' });
+  await expect(page.locator('html')).toHaveAttribute('data-thema', 'dunkel');
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog', { name: 'Einstellungen' })).toHaveCount(0);
 });

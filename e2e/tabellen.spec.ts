@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { stufeWaehlen } from './hilfe';
 
 // Etappe 2 · Modul „Lernen aus Tabellen“, Schulkiosk mit Gerade: FR-11, FR-12, FR-16, FR-19, FR-20, FR-22
 
@@ -103,7 +104,7 @@ test('Projekt aus Version 0.1.0 ohne Daten öffnet das Kiosk-Beispiel', async ({
 
 test('Stufe 2: zu große Lernrate lässt den Fehler steigen, ein Tipp erscheint (FR-17, FR-24)', async ({ page }) => {
   await kiosk(page);
-  await page.getByRole('radio', { name: '2' }).click();
+  await stufeWaehlen(page, 2);
   await page.getByRole('button', { name: 'Training', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Gradientenabstieg' })).toBeVisible();
   await page.getByRole('button', { name: 'Lernrate' }).click();
@@ -128,13 +129,13 @@ test('Stufe 2: zu große Lernrate lässt den Fehler steigen, ein Tipp erscheint 
 
 test('Stufe 1 nutzt die Standard-Lernrate, auch wenn auf Stufe 2 eine andere gewählt war (FR-03, FR-17)', async ({ page }) => {
   await kiosk(page);
-  await page.getByRole('radio', { name: '2' }).click();
+  await stufeWaehlen(page, 2);
   await page.getByRole('button', { name: 'Training', exact: true }).click();
   await page.locator('#lernrate').evaluate((el: HTMLInputElement) => {
     el.value = '1';
     el.dispatchEvent(new Event('input', { bubbles: true }));
   });
-  await page.getByRole('radio', { name: '1' }).click();
+  await stufeWaehlen(page, 1);
   await expect(page.locator('#lernrate')).toHaveCount(0);
   await trainieren(page);
   expect(await fehlerWert(page)).toBeLessThan(3);
@@ -142,7 +143,7 @@ test('Stufe 1 nutzt die Standard-Lernrate, auch wenn auf Stufe 2 eine andere gew
 
 test('Stufe 3: Formel, Steigung und Rechenweg eines Lernschritts sind mit Zahlen ablesbar (FR-18)', async ({ page }) => {
   await kiosk(page);
-  await page.getByRole('radio', { name: '3' }).click();
+  await stufeWaehlen(page, 3);
   await page.getByRole('button', { name: 'Training', exact: true }).click();
   await expect(page.getByText('Macht einen Lernschritt, dann steht hier')).toBeVisible();
   await page.getByRole('button', { name: 'Ein Lernschritt' }).click();

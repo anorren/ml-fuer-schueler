@@ -15,6 +15,16 @@
   let drehung = $state(START.drehung);
   let neigung = $state(START.neigung);
   let zoom = $state(START.zoom);
+  // Knöpfe als Alternative zu den Gesten (Apple HIG, H6): gleiche Grenzen wie beim Ziehen und Zoomen
+  export function drehen(grad: number) {
+    drehung = (drehung + grad) % 360;
+  }
+  export function neigen(grad: number) {
+    neigung = Math.min(Math.max(neigung + grad, 5), 85);
+  }
+  export function zoomen(faktor: number) {
+    zoom = Math.min(Math.max(zoom * faktor, 0.5), 3);
+  }
   export function zuruecksetzen() {
     drehung = START.drehung;
     neigung = START.neigung;
@@ -33,10 +43,10 @@
       farben = { modell: v('--modell', farben.modell), hell: v('--modell-hell', farben.hell), schrift: v('--schrift', farben.schrift), schrift2: v('--schrift2', farben.schrift2), linie: v('--linie', farben.linie), frage: v('--frage', farben.frage), flaeche: v('--flaeche', farben.flaeche), grenze: v('--grenze', farben.grenze) };
     };
     lesen();
-    // Hell/dunkel kann sich während der Arbeit ändern (Dunkelmodus, H9)
-    const m = matchMedia('(prefers-color-scheme: dark)');
-    m.addEventListener('change', lesen);
-    return () => m.removeEventListener('change', lesen);
+    // Hell/dunkel kann sich während der Arbeit ändern (Einstellungen oder Gerät, DEC-15)
+    const beobachter = new MutationObserver(lesen);
+    beobachter.observe(document.documentElement, { attributes: true, attributeFilter: ['data-thema'] });
+    return () => beobachter.disconnect();
   });
 
   const N_FLAECHE = 24;

@@ -94,8 +94,8 @@
   /* Safari beachtet die Höhe einer Auswahl nur ohne Systemdarstellung; der Pfeil kommt deshalb als Hintergrund. */
   select { font: inherit; width: 100%; min-width: 72px; height: 40px; padding: 0 24px 0 8px; border: 1px solid var(--linie); border-radius: 6px; color: var(--schrift); -webkit-appearance: none; appearance: none; background: var(--flaeche) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%2352514e' stroke-width='1.5'/%3E%3C/svg%3E") no-repeat right 8px center; }
   tr.test select { color: var(--frage-text); }
-  @media (prefers-color-scheme: dark) {
-    select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23c2c0ba' stroke-width='1.5'/%3E%3C/svg%3E"); }
+  :global(:root[data-thema='dunkel']) select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23c2c0ba' stroke-width='1.5'/%3E%3C/svg%3E");
   }
   /* Tippfläche 44 × 44 pt (Apple HIG), das Kästchen selbst bleibt klein */
   .testfeld { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; cursor: pointer; }

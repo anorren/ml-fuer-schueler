@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { stufeWaehlen } from './hilfe';
 
 // Etappe 2 · Schritt 3 und 4: Klassen mit Wahrscheinlichkeit (FR-14), Modellwahl (FR-15), Klassenbereiche (FR-20), Torschuss mit Draufsicht und 3D (FR-19, FR-21)
 
@@ -43,7 +44,7 @@ test('Hitzefrei sagt eine Klasse mit Wahrscheinlichkeit voraus, Bereich und Gren
 
 test('Ein heißer Ausreißer verschiebt die Grenze der Geraden, die der S-Kurve kaum (FR-15)', async ({ page }) => {
   await oeffnen(page, /Hitzefrei/, /Wahrscheinlichkeit/);
-  await page.getByRole('radio', { name: '2' }).click();
+  await stufeWaehlen(page, 2);
   const verschiebung = async (art: string) => {
     await modellWaehlen(page, art);
     await trainieren(page);
@@ -73,7 +74,7 @@ test('Beim Bremsweg passt das Netz besser als die Gerade; Neuronen sind einstell
   await trainieren(page);
   const gerade = await fehlerWert(page);
   expect(gerade).toBeGreaterThan(0.8);
-  await page.getByRole('radio', { name: '2' }).click();
+  await stufeWaehlen(page, 2);
   await page.getByRole('button', { name: 'Modell', exact: true }).click();
   await expect(page.locator('.wahl').getByRole('button', { name: 'S-Kurve' })).toBeDisabled();
   await modellWaehlen(page, 'Netz');
@@ -89,7 +90,7 @@ test('Beim Bremsweg passt das Netz besser als die Gerade; Neuronen sind einstell
 
 test('Stufe 3 zeigt Formel der S-Kurve und Gewichte des Netzes (FR-18)', async ({ page }) => {
   await oeffnen(page, /Hitzefrei/, /Wahrscheinlichkeit/);
-  await page.getByRole('radio', { name: '3' }).click();
+  await stufeWaehlen(page, 3);
   await trainieren(page);
   await page.getByRole('button', { name: 'Modell', exact: true }).click();
   await expect(page.locator('.formel')).toContainText(/z = [\d,]+ · Höchsttemperatur − [\d,]+/);
@@ -131,7 +132,7 @@ test('Torschuss: neue Punkte mit gewählter Klasse, Klasse wechseln (FR-11)', as
 test('3D-Ansicht ab Stufe 2: drehen, zoomen, zurücksetzen (FR-21)', async ({ page }) => {
   await oeffnen(page, /Torschuss/, /Draufsicht/);
   await expect(page.getByRole('button', { name: '3D', exact: true })).toHaveCount(0);
-  await page.getByRole('radio', { name: '2' }).click();
+  await stufeWaehlen(page, 2);
   await trainieren(page);
   await page.getByRole('button', { name: '3D', exact: true }).click();
   await expect(page.getByRole('img', { name: /3D-Ansicht: Wahrscheinlichkeit für „Tor“/ })).toBeVisible();
@@ -160,6 +161,15 @@ test('3D-Ansicht ab Stufe 2: drehen, zoomen, zurücksetzen (FR-21)', async ({ pa
   await page.getByRole('button', { name: 'Ansicht zurücksetzen' }).click();
   await expect(leinwand).toHaveAttribute('data-drehung', start!);
   await expect(leinwand).toHaveAttribute('data-zoom', '1.00');
+  // Knöpfe als Alternative zu den Gesten (Apple HIG, H6)
+  await page.getByRole('button', { name: 'Nach rechts drehen' }).click();
+  await expect(leinwand).toHaveAttribute('data-drehung', String(Number(start) + 15));
+  await page.getByRole('button', { name: 'Heranzoomen' }).click();
+  await expect(leinwand).toHaveAttribute('data-zoom', '1.25');
+  await page.getByRole('button', { name: 'Wegzoomen' }).click();
+  await expect(leinwand).toHaveAttribute('data-zoom', '1.00');
+  await page.getByRole('button', { name: 'Ansicht zurücksetzen' }).click();
+  await expect(leinwand).toHaveAttribute('data-drehung', start!);
   // Bereiche lassen sich neben der 3D-Ansicht öffnen; die Fläche bleibt stehen
   await page.getByRole('button', { name: 'Training', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Ein Lernschritt' })).toBeVisible();

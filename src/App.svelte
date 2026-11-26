@@ -12,6 +12,7 @@
   import { modul as modulNach, szenarioTitel } from './lib/module';
   import * as zwischen from './lib/zwischenspeicher';
   import * as einstellungen from './lib/einstellungen';
+  import { darstellungAnwenden, darstellungLaden, darstellungMerken, type Darstellung } from './lib/darstellung';
 
   const APP_VERSION = __APP_VERSION__;
 
@@ -26,6 +27,13 @@
     if (fensterHoehe) document.documentElement.style.setProperty('--fenster-hoehe', `${fensterHoehe}px`);
   });
   $effect(() => document.documentElement.style.setProperty('--fuss-hoehe', `${fussHoehe}px`));
+  // Darstellung hell, dunkel oder System (DEC-15, Einstellungen)
+  let darstellung = $state<Darstellung>(darstellungLaden());
+  $effect(() => darstellungAnwenden(darstellung));
+  function darstellungWaehlen(d: Darstellung) {
+    darstellung = d;
+    darstellungMerken(d);
+  }
   const startstand = zwischen.laden();
   if (startstand) inhaltPruefen(startstand);
   let projekt = $state<Projekt | null>(startstand);
@@ -185,6 +193,9 @@
   team={ansicht === 'arbeit' ? (projekt?.team ?? '') : undefined}
   onTeam={teamAendern}
   onStufe={stufeWechseln}
+  {darstellung}
+  onDarstellung={darstellungWaehlen}
+  version={APP_VERSION}
   onOeffnen={() => dateiwahl.click()}
   onSpeichern={speichern}
   onNeu={neuBeginnen}

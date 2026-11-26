@@ -360,8 +360,18 @@
       <div class="zeilen">
         {#if tipp}<Tipp text={tipp} onWeg={onTippWeg} />{/if}
         {#if ansicht3d}
-          <p class="hinweis klein">Die Fläche zeigt für jeden Schuss, wie <Begriff id="wahrscheinlichkeit" text="wahrscheinlich" /> „{klassen[1]}“ ist; die Grenzlinie liegt bei 50 %. Dreht mit einem Finger, zoomt mit zwei.
-            <button onclick={() => blick?.zuruecksetzen()}>Ansicht zurücksetzen</button></p>
+          <div class="hinweis klein steuerung">
+            <span class="text">Die Fläche zeigt für jeden Schuss, wie <Begriff id="wahrscheinlichkeit" text="wahrscheinlich" /> „{klassen[1]}“ ist; die Grenzlinie liegt bei 50 %. Dreht mit einem Finger, zoomt mit zwei, oder nutzt die Knöpfe.</span>
+            <div class="gruppe" role="group" aria-label="Ansicht der Fläche">
+              <button aria-label="Nach links drehen" onclick={() => blick?.drehen(-15)}>↺</button>
+              <button aria-label="Nach rechts drehen" onclick={() => blick?.drehen(15)}>↻</button>
+              <button aria-label="Von oben ansehen" onclick={() => blick?.neigen(10)}>▲</button>
+              <button aria-label="Flacher ansehen" onclick={() => blick?.neigen(-10)}>▼</button>
+              <button aria-label="Heranzoomen" onclick={() => blick?.zoomen(1.25)}>+</button>
+              <button aria-label="Wegzoomen" onclick={() => blick?.zoomen(0.8)}>−</button>
+              <button onclick={() => blick?.zuruecksetzen()}>Ansicht zurücksetzen</button>
+            </div>
+          </div>
         {:else if hinweis}
           <p class="hinweis klein" class:frage={tippModus === 'vorhersage'}>{hinweis}</p>
         {/if}
@@ -565,7 +575,11 @@
   .zeilen { display: flex; flex-direction: column; gap: 6px; padding: 0 12px 10px; }
   .hinweis { margin: 0; padding: 6px 12px; border-radius: var(--radius-knopf); background: var(--hintergrund); border-left: 4px solid var(--schrift3); color: var(--schrift2); }
   .hinweis.frage { border-left-color: var(--frage); }
-  .hinweis button { margin-left: 8px; font-size: 13px; }
+  .steuerung { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+  .steuerung .text { flex: 1 1 260px; }
+  .gruppe { display: flex; flex-wrap: wrap; gap: 8px; }
+  .gruppe button { min-width: 44px; font-size: 18px; padding: 0 10px; }
+  .gruppe button:last-child { font-size: 13px; }
   .legende { display: flex; gap: 6px 14px; align-items: center; flex-wrap: wrap; color: var(--schrift2); }
   .legende span { display: inline-flex; align-items: center; gap: 6px; }
   .legende i { display: inline-block; }
