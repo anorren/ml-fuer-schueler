@@ -20,6 +20,13 @@
   // Höhe der Kopfleiste (eine oder zwei Zeilen, mit Hilfeband) für die Höhe der Arbeitsfläche
   let kopfHoehe = $state(61);
   $effect(() => document.documentElement.style.setProperty('--kopf-hoehe', `${kopfHoehe}px`));
+  // Sichtbare Fensterhöhe statt 100vh: In Safari ist 100vh höher als der sichtbare Bereich (iPad-Test 26.11.2026).
+  let fensterHoehe = $state(0);
+  let fussHoehe = $state(37);
+  $effect(() => {
+    if (fensterHoehe) document.documentElement.style.setProperty('--fenster-hoehe', `${fensterHoehe}px`);
+  });
+  $effect(() => document.documentElement.style.setProperty('--fuss-hoehe', `${fussHoehe}px`));
   const startstand = zwischen.laden();
   if (startstand) inhaltPruefen(startstand);
   let projekt = $state<Projekt | null>(startstand);
@@ -145,6 +152,8 @@
   }
 </script>
 
+<svelte:window bind:innerHeight={fensterHoehe} />
+
 <div class="kopf" bind:clientHeight={kopfHoehe}>
 <Kopfleiste
   {stufe}
@@ -202,7 +211,7 @@
   </div>
 {/if}
 
-<footer class="klein leise">Machine Learning für Schüler {APP_VERSION} · Herausgegeben von Andreas Norren · <a href="https://andreasnorren.de" target="_blank" rel="noopener">andreasnorren.de</a></footer>
+<footer class="klein leise" bind:clientHeight={fussHoehe}>Machine Learning für Schüler {APP_VERSION} · Herausgegeben von Andreas Norren · <a href="https://andreasnorren.de" target="_blank" rel="noopener">andreasnorren.de</a></footer>
 
 <style>
   main { flex: 1; display: flex; flex-direction: column; }

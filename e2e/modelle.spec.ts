@@ -48,7 +48,7 @@ test('Ein heißer Ausreißer verschiebt die Grenze der Geraden, die der S-Kurve 
     await modellWaehlen(page, art);
     await trainieren(page);
     const vorher = await grenze(page);
-    await page.getByRole('button', { name: 'Tabelle', exact: true }).click();
+    await page.getByRole('button', { name: 'Daten', exact: true }).click();
     for (const t of ['38', '40']) {
       await page.locator('aside').getByRole('button', { name: '+ Zeile' }).click();
       const feld = page.locator('aside').getByLabel(/^Höchsttemperatur Zeile/).last();
@@ -56,14 +56,12 @@ test('Ein heißer Ausreißer verschiebt die Grenze der Geraden, die der S-Kurve 
       await feld.press('Enter');
       await page.locator('aside').getByLabel(/^Hitzefrei Zeile/).last().selectOption('1');
     }
-    await page.getByRole('button', { name: 'Tabelle', exact: true }).click();
     await modellWaehlen(page, art);
     await trainieren(page);
     const nachher = await grenze(page);
     // Ausreißer wieder entfernen
-    await page.getByRole('button', { name: 'Tabelle', exact: true }).click();
+    await page.getByRole('button', { name: 'Daten', exact: true }).click();
     for (let k = 0; k < 2; k++) await page.locator('aside').getByRole('button', { name: /löschen$/ }).last().click();
-    await page.getByRole('button', { name: 'Tabelle', exact: true }).click();
     return nachher - vorher;
   };
   expect(await verschiebung('Gerade')).toBeGreaterThan(0.4);
@@ -162,11 +160,11 @@ test('3D-Ansicht ab Stufe 2: drehen, zoomen, zurücksetzen (FR-21)', async ({ pa
   await page.getByRole('button', { name: 'Ansicht zurücksetzen' }).click();
   await expect(leinwand).toHaveAttribute('data-drehung', start!);
   await expect(leinwand).toHaveAttribute('data-zoom', '1.00');
-  // Karten lassen sich neben der 3D-Ansicht öffnen; die Fläche bleibt stehen
+  // Bereiche lassen sich neben der 3D-Ansicht öffnen; die Fläche bleibt stehen
   await page.getByRole('button', { name: 'Training', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Ein Lernschritt' })).toBeVisible();
   await expect(page.getByRole('img', { name: /3D-Ansicht/ })).toBeVisible();
-  await page.getByRole('button', { name: '3D', exact: true }).click();
+  await page.getByRole('button', { name: 'Draufsicht', exact: true }).click();
   await expect(page.getByRole('img', { name: /Draufsicht/ })).toBeVisible();
 });
 

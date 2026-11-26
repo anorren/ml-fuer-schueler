@@ -8,13 +8,15 @@ test('Start ohne Anmeldung zeigt Galerie, Stufen und Module (FR-01, FR-02)', asy
   await expect(page.getByText('Herausgegeben von Andreas Norren')).toBeVisible();
 });
 
-test('Stufe wechseln und Arbeitsansicht mit Leiste (FR-03, BK-C)', async ({ page }) => {
+test('Stufe wechseln und Arbeitsansicht mit Bereichen (FR-03, BK-D)', async ({ page }) => {
   await page.goto('./');
   await page.getByRole('button', { name: /Schulkiosk/ }).click();
-  await expect(page.getByRole('navigation', { name: 'Werkzeuge' })).toBeVisible();
+  await expect(page.getByRole('complementary', { name: 'Bereiche' })).toBeVisible();
+  for (const b of ['Daten', 'Modell', 'Training', 'Vorhersage']) await expect(page.getByRole('button', { name: b, exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: /Trainieren/ })).toBeVisible();
   await expect(page.getByRole('button', { name: '3D' })).toHaveCount(0);
   await page.getByRole('radio', { name: '2' }).click();
-  await expect(page.getByRole('button', { name: 'Tabelle' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Daten', exact: true })).toHaveAttribute('aria-expanded', 'false');
   // 3D nur bei zwei Eingaben (FR-21)
   await expect(page.getByRole('button', { name: '3D' })).toHaveCount(0);
 });

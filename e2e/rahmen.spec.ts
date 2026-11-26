@@ -20,18 +20,36 @@ test('Stufe bleibt ohne Projekt nach Neuladen erhalten (FR-03)', async ({ page }
   await expect(page.getByRole('radio', { name: '3' })).toHaveAttribute('aria-checked', 'true');
 });
 
-test('Stufe 2 blendet Tabelle und 3D ein, Stufe 1 wieder aus (FR-03)', async ({ page }) => {
+test('Stufe 2 blendet den Reiter 3D ein, Stufe 1 wieder aus (FR-03)', async ({ page }) => {
   await page.goto('./');
   await page.getByRole('button', { name: /Torschuss/ }).click();
   await expect(page.getByRole('button', { name: '3D' })).toHaveCount(0);
-  await expect(page.getByRole('button', { name: /^Tabelle/ })).toHaveCount(0);
   await page.getByRole('radio', { name: '2' }).click();
   await expect(page.getByRole('button', { name: '3D' })).toBeVisible();
-  await page.getByRole('button', { name: /^Tabelle/ }).click();
-  await expect(page.getByRole('complementary', { name: 'Tabelle' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Draufsicht' })).toHaveAttribute('aria-pressed', 'true');
   await page.getByRole('radio', { name: '1' }).click();
   await expect(page.getByRole('button', { name: '3D' })).toHaveCount(0);
-  await expect(page.getByRole('complementary', { name: 'Tabelle' })).toHaveCount(0);
+});
+
+test('Nur ein Bereich ist offen; „Vergrößern“ blendet die Bereiche aus (BK-D)', async ({ page }) => {
+  await page.goto('./');
+  await page.getByRole('button', { name: /Schulkiosk/ }).click();
+  const daten = page.getByRole('button', { name: 'Daten', exact: true });
+  const training = page.getByRole('button', { name: 'Training', exact: true });
+  await daten.click();
+  await expect(daten).toHaveAttribute('aria-expanded', 'true');
+  await expect(page.getByText(/Tippt ins Diagramm, um einen Punkt zu setzen/)).toBeVisible();
+  await training.click();
+  await expect(training).toHaveAttribute('aria-expanded', 'true');
+  await expect(daten).toHaveAttribute('aria-expanded', 'false');
+  await expect(page.getByText('noch nicht trainiert')).toBeVisible();
+  // Die Seite scrollt nicht; alles passt in das Fenster
+  expect(await page.evaluate(() => document.documentElement.scrollHeight <= innerHeight + 1)).toBe(true);
+  await page.getByRole('button', { name: /Vergrößern/ }).click();
+  await expect(page.getByRole('complementary', { name: 'Bereiche' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /Trainieren/ })).toBeVisible();
+  await page.getByRole('button', { name: /Bereiche zeigen/ }).click();
+  await expect(page.getByRole('complementary', { name: 'Bereiche' })).toBeVisible();
 });
 
 test('Teamname landet im Dateinamen und im letzten Stand (FR-08, FR-06)', async ({ page }) => {
@@ -74,7 +92,7 @@ test('„i“ öffnet den Infobereich, Begriffe erklären sich beim Antippen (FR
   await expect(page.getByRole('tooltip')).toContainText('wie groß jeder Lernschritt ist');
   await page.getByRole('button', { name: 'Erklärung schließen' }).click();
   await expect(page.getByRole('tooltip')).toHaveCount(0);
-  await page.getByRole('button', { name: 'Training schließen' }).click();
+  await page.getByRole('button', { name: 'Training', exact: true, expanded: true }).click();
   await expect(page.getByRole('note')).toHaveCount(0);
 });
 
